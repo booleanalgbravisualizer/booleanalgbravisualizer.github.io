@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Boolean Algebra Visualizer - Test</title>
+</head>
+<body>
+    <h1>Boolean Algebra Visualizer - Test</h1>
+    <div id="output"></div>
+    
+    <script src="public/parser.js"></script>
+    <script src="public/visualizer.js"></script>
+    <script>
+        const output = document.getElementById('output');
+        
+        try {
+            // Test 1: Simple expression
+            const expr1 = new BooleanExpression("A*B");
+            output.innerHTML += `
+                <h2>Test 1: A*B</h2>
+                <p>Variables: ${expr1.variables.join(', ')}</p>
+                <p>Normalized: ${expr1.normalizedExpression}</p>
+                <p>AST Type: ${expr1.ast.type}</p>
+                <p>Truth Table Rows: ${expr1.truthTable.length}</p>
+                <p>LaTeX: ${expr1.toLatex()}</p>
+            `;
+            
+            // Test 2: Complex expression
+            const expr2 = new BooleanExpression("(A+B)'*C");
+            output.innerHTML += `
+                <h2>Test 2: (A+B)'*C</h2>
+                <p>Variables: ${expr2.variables.join(', ')}</p>
+                <p>Normalized: ${expr2.normalizedExpression}</p>
+                <p>AST Type: ${expr2.ast.type}</p>
+                <p>Truth Table Rows: ${expr2.truthTable.length}</p>
+                <p>LaTeX: ${expr2.toLatex()}</p>
+            `;
+            
+            // Test 3: Visualizer
+            const visualizer = new Visualizer(expr2);
+            output.innerHTML += `
+                <h2>Test 3: Visualizer</h2>
+                <p>Visualizer created successfully</p>
+                <p>Variables from visualizer: ${visualizer.variables.join(', ')}</p>
+                <p>Truth table rows: ${visualizer.truthTable.length}</p>
+            `;
+            
+            output.innerHTML += `<h2 style="color: green;">✓ All tests passed!</h2>`;
+        } catch (error) {
+            output.innerHTML += `<h2 style="color: red;">✗ Error: ${error.message}</h2>`;
+            console.error(error);
+        }
+    </script>
+</body>
+</html>

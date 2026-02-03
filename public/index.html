@@ -16,40 +16,41 @@
         <main>
             <div class="input-section">
                 <h2>Boolean Expression</h2>
+                <div class="latex-display" id="latexDisplay" style="margin-bottom: 15px; padding: 10px; background: #f5f5f5; border-radius: 5px; min-height: 40px; font-style: italic; display: none;"></div>
                 <p class="help-text">Use: A, B, C... for variables | + for OR | · for AND | ' for NOT | () for grouping</p>
-                <p class="help-text">Examples: (A+B)·C' or AB+C or A·B+A'·C</p>
+                <p class="help-text">Examples: (A+B)·C' or !(A·B) or A·B+A'·C</p>
                 <input 
                     type="text" 
-                    id="expression" 
+                    id="expressionInput" 
                     placeholder="Enter boolean expression (e.g., A·B + A'·C)" 
                     class="expression-input"
                 >
-                <button onclick="visualize()" class="btn-primary">Visualize</button>
-                <div id="error" class="error-message"></div>
+                <button id="visualizeBtn" class="btn-primary">Visualize</button>
+                <div id="errorMessage" class="error-message"></div>
             </div>
 
             <div id="results" class="results-section" style="display:none;">
                 <div class="output-section">
                     <h2>Block Logic Gates</h2>
                     <div class="diagram-container">
-                        <svg id="gatesSvg" width="100%" height="400"></svg>
+                        <svg id="gatesSvg" viewBox="0 0 900 400" width="100%" height="400"></svg>
                     </div>
                 </div>
 
                 <div class="output-section">
-                    <h2>CMOS Gates</h2>
+                    <h2>CMOS Implementation</h2>
                     <div class="diagram-container">
-                        <svg id="cmosSvg" width="100%" height="400"></svg>
+                        <svg id="cmosSvg" viewBox="0 0 900 450" width="100%" height="450"></svg>
                     </div>
                 </div>
 
                 <div class="output-section">
                     <h2>Truth Table</h2>
                     <div class="table-buttons">
-                        <button onclick="copyToClipboard()" class="btn-secondary">Copy as Tab-Separated</button>
-                        <button onclick="copyAsHTML()" class="btn-secondary">Copy as HTML</button>
+                        <button id="copyTableBtn" class="btn-secondary">Copy as Tab-Separated</button>
+                        <button id="copyHTMLBtn" class="btn-secondary">Copy as HTML</button>
                     </div>
-                    <div id="truthTable"></div>
+                    <div id="truthTableContainer"></div>
                 </div>
             </div>
         </main>

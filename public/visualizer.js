@@ -1,662 +1,513 @@
-function drawGatesDiagram(svg, variables, expression) {
-    svg.innerHTML = '';
-    
+/**
+ * Boolean Algebra Visualizer
+ * Generates SVG diagrams for logic gates, CMOS implementations, and truth tables
+ */
+
+class Visualizer {
+  constructor(booleanExpression) {
+    this.expr = booleanExpression;
+    this.ast = booleanExpression.ast;
+    this.variables = booleanExpression.variables;
+    this.truthTable = booleanExpression.truthTable;
+  }
+
+  /**
+   * Render logic gate block diagram from AST
+   */
+  renderGateDiagram(svgElement) {
+    svgElement.innerHTML = '';
+    svgElement.setAttribute('viewBox', '0 0 900 400');
+
     const ns = 'http://www.w3.org/2000/svg';
-    const startY = 60;
-    const gateSpacing = 60;
-    
+
+    // Background
+    const bg = document.createElementNS(ns, 'rect');
+    bg.setAttribute('width', '900');
+    bg.setAttribute('height', '400');
+    bg.setAttribute('fill', '#f9f9f9');
+    bg.setAttribute('stroke', '#ddd');
+    bg.setAttribute('stroke-width', '1');
+    svgElement.appendChild(bg);
+
     // Title
     const title = document.createElementNS(ns, 'text');
-    title.setAttribute('x', '50%');
-    title.setAttribute('y', '30');
+    title.setAttribute('x', '450');
+    title.setAttribute('y', '25');
     title.setAttribute('text-anchor', 'middle');
     title.setAttribute('font-size', '18');
     title.setAttribute('font-weight', 'bold');
-    title.textContent = 'Logic Gate Diagram';
-    svg.appendChild(title);
-    
-    // Draw input variables
-    variables.forEach((v, i) => {
-        const y = startY + i * gateSpacing;
-        
-        const circle = document.createElementNS(ns, 'circle');
-        circle.setAttribute('cx', '30');
-        circle.setAttribute('cy', y);
-        circle.setAttribute('r', '8');
-        circle.setAttribute('fill', '#667eea');
-        svg.appendChild(circle);
-        
-        const label = document.createElementNS(ns, 'text');
-        label.setAttribute('x', '55');
-        label.setAttribute('y', y + 5);
-        label.setAttribute('font-size', '14');
-        label.setAttribute('font-weight', 'bold');
-        label.textContent = v;
-        svg.appendChild(label);
+    title.textContent = 'Logic Gate Block Diagram';
+    svgElement.appendChild(title);
+
+    // Draw variable inputs on left
+    const startY = 80;
+    const gateSpacing = 50;
+
+    this.variables.forEach((v, i) => {
+      const y = startY + i * gateSpacing;
+
+      // Input circle
+      const circle = document.createElementNS(ns, 'circle');
+      circle.setAttribute('cx', '40');
+      circle.setAttribute('cy', y);
+      circle.setAttribute('r', '8');
+      circle.setAttribute('fill', '#667eea');
+      svgElement.appendChild(circle);
+
+      // Input label
+      const label = document.createElementNS(ns, 'text');
+      label.setAttribute('x', '65');
+      label.setAttribute('y', y + 5);
+      label.setAttribute('font-size', '14');
+      label.setAttribute('font-weight', 'bold');
+      label.textContent = v.toUpperCase();
+      svgElement.appendChild(label);
     });
-    
-    // Draw sample gates
-    drawGate(svg, 200, startY + 30, 'AND', '#764ba2');
-    drawGate(svg, 350, startY + 30, 'OR', '#667eea');
-    drawGate(svg, 500, startY + 30, 'NOT', '#ff6b6b');
-    
-    // Output
+
+    // Render gate tree from AST
+    this.renderGateTree(svgElement, this.ast, 150, 150);
+
+    // Draw output circle
     const outputCircle = document.createElementNS(ns, 'circle');
-    outputCircle.setAttribute('cx', '650');
-    outputCircle.setAttribute('cy', startY + 30);
+    outputCircle.setAttribute('cx', '850');
+    outputCircle.setAttribute('cy', '150');
     outputCircle.setAttribute('r', '8');
     outputCircle.setAttribute('fill', '#28a745');
-    svg.appendChild(outputCircle);
-    
+    svgElement.appendChild(outputCircle);
+
     const outputLabel = document.createElementNS(ns, 'text');
-    outputLabel.setAttribute('x', '675');
-    outputLabel.setAttribute('y', startY + 35);
+    outputLabel.setAttribute('x', '810');
+    outputLabel.setAttribute('y', '155');
     outputLabel.setAttribute('font-size', '14');
     outputLabel.setAttribute('font-weight', 'bold');
     outputLabel.textContent = 'Output';
-    svg.appendChild(outputLabel);
-}
+    svgElement.appendChild(outputLabel);
+  }
 
-function drawGate(svg, x, y, type, color) {
+  /**
+   * Recursively render gate tree
+   */
+  renderGateTree(svg, ast, x, y, depth = 0) {
     const ns = 'http://www.w3.org/2000/svg';
-    
-    const rect = document.createElementNS(ns, 'rect');
-    rect.setAttribute('x', x - 30);
-    rect.setAttribute('y', y - 25);
-    rect.setAttribute('width', '60');
-    rect.setAttribute('height', '50');
-    rect.setAttribute('fill', color);
-    rect.setAttribute('stroke', '#333');
-    rect.setAttribute('stroke-width', '2');
-    rect.setAttribute('rx', '5');
-    svg.appendChild(rect);
-    
-    const text = document.createElementNS(ns, 'text');
-    text.setAttribute('x', x);
-    text.setAttribute('y', y + 8);
-    text.setAttribute('text-anchor', 'middle');
-    text.setAttribute('fill', 'white');
-    text.setAttribute('font-size', '12');
-    text.setAttribute('font-weight', 'bold');
-    text.textContent = type;
-    svg.appendChild(text);
-}
+    const spacing = 80;
 
-function drawCMOSDiagram(svg, variables, expression) {
-    svg.innerHTML = '';
-    
-    const ns = 'http://www.w3.org/2000/svg';
-    
-    // Title
-    const title = document.createElementNS(ns, 'text');
-    title.setAttribute('x', '50%');
-    title.setAttribute('y', '30');
-    title.setAttribute('text-anchor', 'middle');
-    title.setAttribute('font-size', '18');
-    title.setAttribute('font-weight', 'bold');
-    title.textContent = 'CMOS Implementation';
-    svg.appendChild(title);
-    
-    // VDD label
-    const vddLabel = document.createElementNS(ns, 'text');
-    vddLabel.setAttribute('x', '100');
-    vddLabel.setAttribute('y', '70');
-    vddLabel.setAttribute('font-size', '14');
-    vddLabel.setAttribute('font-weight', 'bold');
-    vddLabel.textContent = 'VDD (Pull-up Network)';
-    svg.appendChild(vddLabel);
-    
-    // Draw PMOS transistors
-    for (let i = 0; i < variables.length; i++) {
-        drawCMOSTransistor(svg, 150 + i * 120, 120, 'PMOS', '#2196f3');
-    }
-    
-    // GND label
-    const gndLabel = document.createElementNS(ns, 'text');
-    gndLabel.setAttribute('x', '100');
-    gndLabel.setAttribute('y', '280');
-    gndLabel.setAttribute('font-size', '14');
-    gndLabel.setAttribute('font-weight', 'bold');
-    gndLabel.textContent = 'GND (Pull-down Network)';
-    svg.appendChild(gndLabel);
-    
-    // Draw NMOS transistors
-    for (let i = 0; i < variables.length; i++) {
-        drawCMOSTransistor(svg, 150 + i * 120, 280, 'NMOS', '#f44336');
-    }
-    
-    // Output node
-    const output = document.createElementNS(ns, 'circle');
-    output.setAttribute('cx', '400');
-    output.setAttribute('cy', '200');
-    output.setAttribute('r', '8');
-    output.setAttribute('fill', '#ff9800');
-    svg.appendChild(output);
-    
-    const outLabel = document.createElementNS(ns, 'text');
-    outLabel.setAttribute('x', '420');
-    outLabel.setAttribute('y', '205');
-    outLabel.setAttribute('font-size', '12');
-    outLabel.setAttribute('font-weight', 'bold');
-    outLabel.textContent = 'Output';
-    svg.appendChild(outLabel);
-}
-
-function drawCMOSTransistor(svg, x, y, type, color) {
-    const ns = 'http://www.w3.org/2000/svg';
-    
-    // Gate
-    const gate = document.createElementNS(ns, 'line');
-    gate.setAttribute('x1', x - 5);
-    gate.setAttribute('y1', y - 30);
-    gate.setAttribute('x2', x - 5);
-    gate.setAttribute('y2', y + 30);
-    gate.setAttribute('stroke', '#333');
-    gate.setAttribute('stroke-width', '3');
-    svg.appendChild(gate);
-    
-    // Channel
-    const channel = document.createElementNS(ns, 'rect');
-    channel.setAttribute('x', x - 2);
-    channel.setAttribute('y', y - 10);
-    channel.setAttribute('width', '20');
-    channel.setAttribute('height', '20');
-    channel.setAttribute('fill', color);
-    channel.setAttribute('stroke', '#333');
-    channel.setAttribute('stroke-width', '2');
-    svg.appendChild(channel);
-    
-    // Label
-    const label = document.createElementNS(ns, 'text');
-    label.setAttribute('x', x + 15);
-    label.setAttribute('y', y + 5);
-    label.setAttribute('font-size', '11');
-    label.textContent = type[0];
-    svg.appendChild(label);
-}
-
-function drawTruthTable(data) {
-    const container = document.getElementById('truthTable');
-    container.innerHTML = '';
-    
-    if (!data.truthTable || data.truthTable.length === 0) {
-        container.innerHTML = '<p>No truth table data</p>';
-        return;
-    }
-    
-    const table = document.createElement('table');
-    
-    // Header
-    const thead = document.createElement('thead');
-    const headerRow = document.createElement('tr');
-    
-    data.variables.forEach(v => {
-        const th = document.createElement('th');
-        th.textContent = v;
-        headerRow.appendChild(th);
-    });
-    
-    const outputTh = document.createElement('th');
-    outputTh.textContent = 'Output';
-    headerRow.appendChild(outputTh);
-    
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-    
-    // Body
-    const tbody = document.createElement('tbody');
-    data.truthTable.forEach(row => {
-        const tr = document.createElement('tr');
-        
-        data.variables.forEach(v => {
-            const td = document.createElement('td');
-            td.textContent = row[v];
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    
-    // Input lines
-    const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line1.setAttributeNS(null, 'x1', x - 30);
-    line1.setAttributeNS(null, 'y1', y - 12);
-    line1.setAttributeNS(null, 'x2', x);
-    line1.setAttributeNS(null, 'y2', y - 12);
-    line1.setAttributeNS(null, 'stroke', 'black');
-    line1.setAttributeNS(null, 'stroke-width', '2');
-    
-    const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line2.setAttributeNS(null, 'x1', x - 30);
-    line2.setAttributeNS(null, 'y1', y + 12);
-    line2.setAttributeNS(null, 'x2', x);
-    line2.setAttributeNS(null, 'y2', y + 12);
-    line2.setAttributeNS(null, 'stroke', 'black');
-    line2.setAttributeNS(null, 'stroke-width', '2');
-    
-    // AND gate shape (flat left, curved right)
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttributeNS(null, 'd', `M ${x} ${y-25} L ${x} ${y+25} Q ${x+35} ${y+25} ${x+35} ${y} Q ${x+35} ${y-25} ${x} ${y-25}`);
-    path.setAttributeNS(null, 'stroke', 'black');
-    path.setAttributeNS(null, 'stroke-width', '2');
-    path.setAttributeNS(null, 'fill', 'white');
-    
-    // Output line
-    const outLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    outLine.setAttributeNS(null, 'x1', x + 35);
-    outLine.setAttributeNS(null, 'y1', y);
-    outLine.setAttributeNS(null, 'x2', x + 65);
-    outLine.setAttributeNS(null, 'y2', y);
-    outLine.setAttributeNS(null, 'stroke', 'black');
-    outLine.setAttributeNS(null, 'stroke-width', '2');
-    
-    // Label
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.setAttributeNS(null, 'x', x + 17);
-    text.setAttributeNS(null, 'y', y + 5);
-    text.setAttributeNS(null, 'font-size', '12');
-    text.setAttributeNS(null, 'text-anchor', 'middle');
-    text.textContent = '&';
-    
-    g.appendChild(line1);
-    g.appendChild(line2);
-    g.appendChild(path);
-    g.appendChild(outLine);
-    g.appendChild(text);
-    
-    svg.appendChild(g);
-    return x + 100;
-  }
-
-  /**
-   * Renders OR gate
-   */
-  drawOrGate(svg, x, y) {
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    
-    // Input lines
-    const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line1.setAttributeNS(null, 'x1', x - 30);
-    line1.setAttributeNS(null, 'y1', y - 12);
-    line1.setAttributeNS(null, 'x2', x - 5);
-    line1.setAttributeNS(null, 'y2', y - 12);
-    line1.setAttributeNS(null, 'stroke', 'black');
-    line1.setAttributeNS(null, 'stroke-width', '2');
-    
-    const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line2.setAttributeNS(null, 'x1', x - 30);
-    line2.setAttributeNS(null, 'y1', y + 12);
-    line2.setAttributeNS(null, 'x2', x - 5);
-    line2.setAttributeNS(null, 'y2', y + 12);
-    line2.setAttributeNS(null, 'stroke', 'black');
-    line2.setAttributeNS(null, 'stroke-width', '2');
-    
-    // OR gate shape (curved on both sides)
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttributeNS(null, 'd', `M ${x-5} ${y-25} Q ${x} ${y-25} ${x+5} ${y-18} L ${x+35} ${y} L ${x+5} ${y+18} Q ${x} ${y+25} ${x-5} ${y+25} Q ${x-12} ${y+18} ${x-12} ${y} Q ${x-12} ${y-18} ${x-5} ${y-25}`);
-    path.setAttributeNS(null, 'stroke', 'black');
-    path.setAttributeNS(null, 'stroke-width', '2');
-    path.setAttributeNS(null, 'fill', 'white');
-    
-    // Output line
-    const outLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    outLine.setAttributeNS(null, 'x1', x + 35);
-    outLine.setAttributeNS(null, 'y1', y);
-    outLine.setAttributeNS(null, 'x2', x + 65);
-    outLine.setAttributeNS(null, 'y2', y);
-    outLine.setAttributeNS(null, 'stroke', 'black');
-    outLine.setAttributeNS(null, 'stroke-width', '2');
-    
-    // Label
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.setAttributeNS(null, 'x', x + 20);
-    text.setAttributeNS(null, 'y', y + 5);
-    text.setAttributeNS(null, 'font-size', '12');
-    text.setAttributeNS(null, 'text-anchor', 'middle');
-    text.textContent = '≥1';
-    
-    g.appendChild(line1);
-    g.appendChild(line2);
-    g.appendChild(path);
-    g.appendChild(outLine);
-    g.appendChild(text);
-    
-    svg.appendChild(g);
-    return x + 100;
-  }
-
-  /**
-   * Renders NOT gate
-   */
-  drawNotGate(svg, x, y) {
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    
-    // Input line
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttributeNS(null, 'x1', x - 30);
-    line.setAttributeNS(null, 'y1', y);
-    line.setAttributeNS(null, 'x2', x);
-    line.setAttributeNS(null, 'y2', y);
-    line.setAttributeNS(null, 'stroke', 'black');
-    line.setAttributeNS(null, 'stroke-width', '2');
-    
-    // NOT gate (triangle)
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttributeNS(null, 'd', `M ${x} ${y-18} L ${x+30} ${y} L ${x} ${y+18} Z`);
-    path.setAttributeNS(null, 'stroke', 'black');
-    path.setAttributeNS(null, 'stroke-width', '2');
-    path.setAttributeNS(null, 'fill', 'white');
-    
-    // Small circle at output
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttributeNS(null, 'cx', x + 38);
-    circle.setAttributeNS(null, 'cy', y);
-    circle.setAttributeNS(null, 'r', '6');
-    circle.setAttributeNS(null, 'stroke', 'black');
-    circle.setAttributeNS(null, 'stroke-width', '2');
-    circle.setAttributeNS(null, 'fill', 'white');
-    
-    // Output line
-    const outLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    outLine.setAttributeNS(null, 'x1', x + 44);
-    outLine.setAttributeNS(null, 'y1', y);
-    outLine.setAttributeNS(null, 'x2', x + 65);
-    outLine.setAttributeNS(null, 'y2', y);
-    outLine.setAttributeNS(null, 'stroke', 'black');
-    outLine.setAttributeNS(null, 'stroke-width', '2');
-    
-    g.appendChild(line);
-    g.appendChild(path);
-    g.appendChild(circle);
-    g.appendChild(outLine);
-    
-    svg.appendChild(g);
-    return x + 100;
-  }
-
-  /**
-   * Render CMOS transistor pair (pull-up/pull-down)
-   */
-  drawCMOSPair(svg, x, y, type = 'nmos', label = '') {
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    
-    // Gate line
-    const gateLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    gateLine.setAttributeNS(null, 'x1', x - 10);
-    gateLine.setAttributeNS(null, 'y1', y - 25);
-    gateLine.setAttributeNS(null, 'x2', x - 10);
-    gateLine.setAttributeNS(null, 'y2', y + 25);
-    gateLine.setAttributeNS(null, 'stroke', 'black');
-    gateLine.setAttributeNS(null, 'stroke-width', '2');
-    
-    // Channel
-    const channel = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    channel.setAttributeNS(null, 'x', x - 5);
-    channel.setAttributeNS(null, 'y', y - 8);
-    channel.setAttributeNS(null, 'width', '20');
-    channel.setAttributeNS(null, 'height', '16');
-    channel.setAttributeNS(null, 'stroke', 'black');
-    channel.setAttributeNS(null, 'stroke-width', '2');
-    channel.setAttributeNS(null, 'fill', 'white');
-    
-    // Source
-    const source = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    source.setAttributeNS(null, 'x1', x + 15);
-    source.setAttributeNS(null, 'y1', y + 20);
-    source.setAttributeNS(null, 'x2', x + 15);
-    source.setAttributeNS(null, 'y2', y + 35);
-    source.setAttributeNS(null, 'stroke', 'black');
-    source.setAttributeNS(null, 'stroke-width', '2');
-    
-    // Drain
-    const drain = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    drain.setAttributeNS(null, 'x1', x + 15);
-    drain.setAttributeNS(null, 'y1', y - 20);
-    drain.setAttributeNS(null, 'x2', x + 15);
-    drain.setAttributeNS(null, 'y2', y - 35);
-    drain.setAttributeNS(null, 'stroke', 'black');
-    drain.setAttributeNS(null, 'stroke-width', '2');
-    
-    g.appendChild(gateLine);
-    g.appendChild(channel);
-    g.appendChild(source);
-    g.appendChild(drain);
-    
-    svg.appendChild(g);
-  }
-
-  /**
-   * Main method to render circuit from AST
-   */
-  renderBlockGates(svg, ast, variables) {
-    // Clear SVG
-    while (svg.firstChild) {
-      svg.removeChild(svg.firstChild);
-    }
-
-    // Set SVG viewBox
-    svg.setAttributeNS(null, 'viewBox', '0 0 800 300');
-
-    // Add background
-    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    bg.setAttributeNS(null, 'width', '800');
-    bg.setAttributeNS(null, 'height', '300');
-    bg.setAttributeNS(null, 'fill', '#f9f9f9');
-    bg.setAttributeNS(null, 'stroke', '#ddd');
-    bg.setAttributeNS(null, 'stroke-width', '1');
-    svg.appendChild(bg);
-
-    // Render simple gates based on AST
-    this.renderGateTree(svg, ast, 50, 150, variables);
-  }
-
-  renderGateTree(svg, ast, x, y, variables) {
     if (ast.type === 'VAR') {
-      // Draw variable label
-      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.setAttributeNS(null, 'x', x + 20);
-      text.setAttributeNS(null, 'y', y + 8);
-      text.setAttributeNS(null, 'font-size', '14');
-      text.setAttributeNS(null, 'font-weight', 'bold');
-      text.textContent = ast.name;
+      // Draw variable node
+      const rect = document.createElementNS(ns, 'rect');
+      rect.setAttribute('x', x - 20);
+      rect.setAttribute('y', y - 15);
+      rect.setAttribute('width', '40');
+      rect.setAttribute('height', '30');
+      rect.setAttribute('fill', '#e3f2fd');
+      rect.setAttribute('stroke', '#1976d2');
+      rect.setAttribute('stroke-width', '2');
+      rect.setAttribute('rx', '3');
+      svg.appendChild(rect);
+
+      const text = document.createElementNS(ns, 'text');
+      text.setAttribute('x', x);
+      text.setAttribute('y', y + 5);
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('font-size', '12');
+      text.setAttribute('font-weight', 'bold');
+      text.textContent = ast.value.toUpperCase();
       svg.appendChild(text);
-      
-      // Draw circle
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttributeNS(null, 'cx', x + 20);
-      circle.setAttributeNS(null, 'cy', y);
-      circle.setAttributeNS(null, 'r', '8');
-      circle.setAttributeNS(null, 'fill', '#e3f2fd');
-      circle.setAttributeNS(null, 'stroke', '#1976d2');
-      circle.setAttributeNS(null, 'stroke-width', '2');
-      svg.appendChild(circle);
-      
-      return x + 50;
+
+      return x + 40;
     }
 
     if (ast.type === 'NOT') {
-      const inX = this.renderGateTree(svg, ast.operand, x, y, variables);
-      this.drawNotGate(svg, inX, y);
-      return inX + 100;
+      const inputX = this.renderGateTree(svg, ast.operand, x, y, depth + 1);
+      this.drawNotGate(svg, inputX + 30, y);
+      return inputX + 80;
     }
 
     if (ast.type === 'AND') {
-      const leftX = this.renderGateTree(svg, ast.left, x, y - 30, variables);
-      const rightX = this.renderGateTree(svg, ast.right, x, y + 30, variables);
-      const midX = Math.max(leftX, rightX) + 30;
+      const leftY = y - 40;
+      const rightY = y + 40;
+      const leftX = this.renderGateTree(svg, ast.left, x, leftY, depth + 1);
+      const rightX = this.renderGateTree(svg, ast.right, x, rightY, depth + 1);
       
-      // Connect left output
-      const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line1.setAttributeNS(null, 'x1', leftX);
-      line1.setAttributeNS(null, 'y1', y - 30);
-      line1.setAttributeNS(null, 'x2', midX - 30);
-      line1.setAttributeNS(null, 'y2', y - 30);
-      line1.setAttributeNS(null, 'x2_new', midX - 30);
-      line1.setAttributeNS(null, 'y2_new', y - 12);
-      line1.setAttributeNS(null, 'stroke', 'black');
-      line1.setAttributeNS(null, 'stroke-width', '1');
-      svg.appendChild(line1);
+      const gateX = Math.max(leftX, rightX) + 30;
+      this.drawAndGate(svg, gateX, y);
       
-      // Connect right output
-      const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line2.setAttributeNS(null, 'x1', rightX);
-      line2.setAttributeNS(null, 'y1', y + 30);
-      line2.setAttributeNS(null, 'x2', midX - 30);
-      line2.setAttributeNS(null, 'y2', y + 30);
-      line2.setAttributeNS(null, 'x2_new', midX - 30);
-      line2.setAttributeNS(null, 'y2_new', y + 12);
-      line2.setAttributeNS(null, 'stroke', 'black');
-      line2.setAttributeNS(null, 'stroke-width', '1');
-      svg.appendChild(line2);
+      // Connect inputs to gate
+      this.connectLine(svg, leftX, leftY, gateX - 35, y - 12);
+      this.connectLine(svg, rightX, rightY, gateX - 35, y + 12);
       
-      this.drawAndGate(svg, midX, y);
-      return midX + 100;
+      return gateX + 80;
     }
 
     if (ast.type === 'OR') {
-      const leftX = this.renderGateTree(svg, ast.left, x, y - 30, variables);
-      const rightX = this.renderGateTree(svg, ast.right, x, y + 30, variables);
-      const midX = Math.max(leftX, rightX) + 30;
+      const leftY = y - 40;
+      const rightY = y + 40;
+      const leftX = this.renderGateTree(svg, ast.left, x, leftY, depth + 1);
+      const rightX = this.renderGateTree(svg, ast.right, x, rightY, depth + 1);
       
-      // Connect left output
-      const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line1.setAttributeNS(null, 'x1', leftX);
-      line1.setAttributeNS(null, 'y1', y - 30);
-      line1.setAttributeNS(null, 'x2', midX - 30);
-      line1.setAttributeNS(null, 'y2', y - 30);
-      line1.setAttributeNS(null, 'x2_new', midX - 35);
-      line1.setAttributeNS(null, 'y2_new', y - 12);
-      line1.setAttributeNS(null, 'stroke', 'black');
-      line1.setAttributeNS(null, 'stroke-width', '1');
-      svg.appendChild(line1);
+      const gateX = Math.max(leftX, rightX) + 30;
+      this.drawOrGate(svg, gateX, y);
       
-      // Connect right output
-      const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line2.setAttributeNS(null, 'x1', rightX);
-      line2.setAttributeNS(null, 'y1', y + 30);
-      line2.setAttributeNS(null, 'x2', midX - 30);
-      line2.setAttributeNS(null, 'y2', y + 30);
-      line2.setAttributeNS(null, 'x2_new', midX - 35);
-      line2.setAttributeNS(null, 'y2_new', y + 12);
-      line2.setAttributeNS(null, 'stroke', 'black');
-      line2.setAttributeNS(null, 'stroke-width', '1');
-      svg.appendChild(line2);
+      // Connect inputs to gate
+      this.connectLine(svg, leftX, leftY, gateX - 35, y - 12);
+      this.connectLine(svg, rightX, rightY, gateX - 35, y + 12);
       
-      this.drawOrGate(svg, midX, y);
-      return midX + 100;
+      return gateX + 80;
     }
 
     return x;
   }
 
   /**
-   * Render CMOS implementation
+   * Draw AND gate
    */
-  renderCMOSGates(svg, ast, variables) {
-    // Clear SVG
-    while (svg.firstChild) {
-      svg.removeChild(svg.firstChild);
-    }
+  drawAndGate(svg, x, y) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const g = document.createElementNS(ns, 'g');
 
-    svg.setAttributeNS(null, 'viewBox', '0 0 800 400');
+    // Flat left, curved right
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', `M ${x - 30} ${y - 25} L ${x - 30} ${y + 25} Q ${x + 5} ${y + 25} ${x + 5} ${y} Q ${x + 5} ${y - 25} ${x - 30} ${y - 25}`);
+    path.setAttribute('stroke', '#333');
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('fill', 'white');
+    g.appendChild(path);
 
-    // Add background
-    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    bg.setAttributeNS(null, 'width', '800');
-    bg.setAttributeNS(null, 'height', '400');
-    bg.setAttributeNS(null, 'fill', '#fafafa');
-    bg.setAttributeNS(null, 'stroke', '#ddd');
-    bg.setAttributeNS(null, 'stroke-width', '1');
-    svg.appendChild(bg);
+    // Label
+    const text = document.createElementNS(ns, 'text');
+    text.setAttribute('x', x - 10);
+    text.setAttribute('y', y + 6);
+    text.setAttribute('font-size', '12');
+    text.setAttribute('font-weight', 'bold');
+    text.setAttribute('text-anchor', 'middle');
+    text.textContent = '&';
+    g.appendChild(text);
+
+    svg.appendChild(g);
+  }
+
+  /**
+   * Draw OR gate
+   */
+  drawOrGate(svg, x, y) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const g = document.createElementNS(ns, 'g');
+
+    // Curved on both sides
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', `M ${x - 30} ${y - 25} Q ${x - 20} ${y - 25} ${x - 10} ${y - 18} L ${x + 15} ${y} L ${x - 10} ${y + 18} Q ${x - 20} ${y + 25} ${x - 30} ${y + 25} Q ${x - 40} ${y + 18} ${x - 40} ${y} Q ${x - 40} ${y - 18} ${x - 30} ${y - 25}`);
+    path.setAttribute('stroke', '#333');
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('fill', 'white');
+    g.appendChild(path);
+
+    // Label
+    const text = document.createElementNS(ns, 'text');
+    text.setAttribute('x', x - 15);
+    text.setAttribute('y', y + 6);
+    text.setAttribute('font-size', '12');
+    text.setAttribute('font-weight', 'bold');
+    text.setAttribute('text-anchor', 'middle');
+    text.textContent = '≥1';
+    g.appendChild(text);
+
+    svg.appendChild(g);
+  }
+
+  /**
+   * Draw NOT gate
+   */
+  drawNotGate(svg, x, y) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const g = document.createElementNS(ns, 'g');
+
+    // Triangle
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', `M ${x - 15} ${y - 18} L ${x + 15} ${y} L ${x - 15} ${y + 18} Z`);
+    path.setAttribute('stroke', '#333');
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('fill', 'white');
+    g.appendChild(path);
+
+    // Negation circle
+    const circle = document.createElementNS(ns, 'circle');
+    circle.setAttribute('cx', x + 22);
+    circle.setAttribute('cy', y);
+    circle.setAttribute('r', '6');
+    circle.setAttribute('stroke', '#333');
+    circle.setAttribute('stroke-width', '2');
+    circle.setAttribute('fill', 'white');
+    g.appendChild(circle);
+
+    svg.appendChild(g);
+  }
+
+  /**
+   * Helper: draw connecting line
+   */
+  connectLine(svg, x1, y1, x2, y2) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('x1', x1);
+    line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2);
+    line.setAttribute('y2', y2);
+    line.setAttribute('stroke', '#333');
+    line.setAttribute('stroke-width', '1.5');
+    svg.appendChild(line);
+  }
+
+  /**
+   * Render CMOS implementation diagram
+   */
+  renderCMOSDiagram(svgElement) {
+    svgElement.innerHTML = '';
+    svgElement.setAttribute('viewBox', '0 0 900 450');
+
+    const ns = 'http://www.w3.org/2000/svg';
+
+    // Background
+    const bg = document.createElementNS(ns, 'rect');
+    bg.setAttribute('width', '900');
+    bg.setAttribute('height', '450');
+    bg.setAttribute('fill', '#fafafa');
+    bg.setAttribute('stroke', '#ddd');
+    bg.setAttribute('stroke-width', '1');
+    svgElement.appendChild(bg);
 
     // Title
-    const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    title.setAttributeNS(null, 'x', '400');
-    title.setAttributeNS(null, 'y', '30');
-    title.setAttributeNS(null, 'font-size', '16');
-    title.setAttributeNS(null, 'font-weight', 'bold');
-    title.setAttributeNS(null, 'text-anchor', 'middle');
-    title.textContent = 'CMOS Implementation Structure';
-    svg.appendChild(title);
+    const title = document.createElementNS(ns, 'text');
+    title.setAttribute('x', '450');
+    title.setAttribute('y', '25');
+    title.setAttribute('text-anchor', 'middle');
+    title.setAttribute('font-size', '18');
+    title.setAttribute('font-weight', 'bold');
+    title.textContent = 'CMOS Implementation';
+    svgElement.appendChild(title);
 
-    // Draw power supply labels
-    const vddLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    vddLabel.setAttributeNS(null, 'x', '80');
-    vddLabel.setAttributeNS(null, 'y', '80');
-    vddLabel.setAttributeNS(null, 'font-size', '12');
-    vddLabel.setAttributeNS(null, 'font-weight', 'bold');
-    vddLabel.textContent = 'VDD (Pull-up)';
-    svg.appendChild(vddLabel);
+    // VDD line
+    const vddLine = document.createElementNS(ns, 'line');
+    vddLine.setAttribute('x1', '100');
+    vddLine.setAttribute('y1', '80');
+    vddLine.setAttribute('x2', '800');
+    vddLine.setAttribute('y2', '80');
+    vddLine.setAttribute('stroke', '#d32f2f');
+    vddLine.setAttribute('stroke-width', '3');
+    svgElement.appendChild(vddLine);
 
-    const gndLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    gndLabel.setAttributeNS(null, 'x', '80');
-    gndLabel.setAttributeNS(null, 'y', '350');
-    gndLabel.setAttributeNS(null, 'font-size', '12');
-    gndLabel.setAttributeNS(null, 'font-weight', 'bold');
-    gndLabel.textContent = 'GND (Pull-down)';
-    svg.appendChild(gndLabel);
+    const vddLabel = document.createElementNS(ns, 'text');
+    vddLabel.setAttribute('x', '50');
+    vddLabel.setAttribute('y', '85');
+    vddLabel.setAttribute('font-size', '12');
+    vddLabel.setAttribute('font-weight', 'bold');
+    vddLabel.textContent = 'VDD';
+    svgElement.appendChild(vddLabel);
 
-    // Draw simplified CMOS structure
-    const xStart = 200;
-    
-    // PMOS (pull-up) - top
-    this.drawCMOSPair(svg, xStart, 120, 'pmos', 'P');
-    
-    // NMOS (pull-down) - bottom
-    this.drawCMOSPair(svg, xStart, 280, 'nmos', 'N');
+    // GND line
+    const gndLine = document.createElementNS(ns, 'line');
+    gndLine.setAttribute('x1', '100');
+    gndLine.setAttribute('y1', '420');
+    gndLine.setAttribute('x2', '800');
+    gndLine.setAttribute('y2', '420');
+    gndLine.setAttribute('stroke', '#1976d2');
+    gndLine.setAttribute('stroke-width', '3');
+    svgElement.appendChild(gndLine);
 
-    // Output line in middle
-    const output = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    output.setAttributeNS(null, 'cx', xStart + 15);
-    output.setAttributeNS(null, 'cy', '200');
-    output.setAttributeNS(null, 'r', '5');
-    output.setAttributeNS(null, 'fill', '#ff9800');
-    svg.appendChild(output);
+    const gndLabel = document.createElementNS(ns, 'text');
+    gndLabel.setAttribute('x', '40');
+    gndLabel.setAttribute('y', '425');
+    gndLabel.setAttribute('font-size', '12');
+    gndLabel.setAttribute('font-weight', 'bold');
+    gndLabel.textContent = 'GND';
+    svgElement.appendChild(gndLabel);
 
-    const outLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    outLabel.setAttributeNS(null, 'x', xStart + 40);
-    outLabel.setAttributeNS(null, 'y', '205');
-    outLabel.setAttributeNS(null, 'font-size', '12');
-    outLabel.textContent = 'Output';
-    svg.appendChild(outLabel);
+    // Draw pull-up network (PMOS)
+    this.variables.forEach((v, i) => {
+      this.drawCMOSTransistor(svgElement, 200 + i * 100, 120, 'PMOS', '#2196f3');
+    });
 
-    // Add info box
-    const infoBox = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    infoBox.setAttributeNS(null, 'x', '450');
-    infoBox.setAttributeNS(null, 'y', '80');
-    infoBox.setAttributeNS(null, 'width', '300');
-    infoBox.setAttributeNS(null, 'height', '280');
-    infoBox.setAttributeNS(null, 'fill', '#e8f5e9');
-    infoBox.setAttributeNS(null, 'stroke', '#4caf50');
-    infoBox.setAttributeNS(null, 'stroke-width', '1');
-    svg.appendChild(infoBox);
+    // Draw pull-down network (NMOS)
+    this.variables.forEach((v, i) => {
+      this.drawCMOSTransistor(svgElement, 200 + i * 100, 360, 'NMOS', '#f44336');
+    });
 
-    const infoTitle = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    infoTitle.setAttributeNS(null, 'x', '600');
-    infoTitle.setAttributeNS(null, 'y', '105');
-    infoTitle.setAttributeNS(null, 'font-size', '13');
-    infoTitle.setAttributeNS(null, 'font-weight', 'bold');
-    infoTitle.setAttributeNS(null, 'text-anchor', 'middle');
+    // Output node
+    const output = document.createElementNS(ns, 'circle');
+    output.setAttribute('cx', '100');
+    output.setAttribute('cy', '250');
+    output.setAttribute('r', '8');
+    output.setAttribute('fill', '#ff9800');
+    output.setAttribute('stroke', '#333');
+    output.setAttribute('stroke-width', '2');
+    svgElement.appendChild(output);
+
+    const outLabel = document.createElementNS(ns, 'text');
+    outLabel.setAttribute('x', '30');
+    outLabel.setAttribute('y', '255');
+    outLabel.setAttribute('font-size', '12');
+    outLabel.setAttribute('font-weight', 'bold');
+    outLabel.textContent = 'Out';
+    svgElement.appendChild(outLabel);
+
+    // Info box
+    const infoBox = document.createElementNS(ns, 'rect');
+    infoBox.setAttribute('x', '550');
+    infoBox.setAttribute('y', '120');
+    infoBox.setAttribute('width', '300');
+    infoBox.setAttribute('height', '280');
+    infoBox.setAttribute('fill', '#e8f5e9');
+    infoBox.setAttribute('stroke', '#4caf50');
+    infoBox.setAttribute('stroke-width', '2');
+    infoBox.setAttribute('rx', '5');
+    svgElement.appendChild(infoBox);
+
+    const infoTitle = document.createElementNS(ns, 'text');
+    infoTitle.setAttribute('x', '700');
+    infoTitle.setAttribute('y', '145');
+    infoTitle.setAttribute('font-size', '14');
+    infoTitle.setAttribute('font-weight', 'bold');
+    infoTitle.setAttribute('text-anchor', 'middle');
     infoTitle.textContent = 'CMOS Characteristics';
-    svg.appendChild(infoTitle);
+    svgElement.appendChild(infoTitle);
 
     const infos = [
-      '• PMOS: Pull-up network (logic 1)',
-      '• NMOS: Pull-down network (logic 0)',
-      '• Complementary logic',
-      '• Low power consumption',
+      '• PMOS transistors in pull-up network',
+      '• NMOS transistors in pull-down network',
+      '• Complementary logic design',
+      '• Low static power consumption',
       '• High noise immunity',
-      '• Static CMOS: Always one active'
+      '• Logic levels: 0 or 1 (rail-to-rail)',
+      '• Push-pull output stage'
     ];
 
     infos.forEach((info, i) => {
-      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.setAttributeNS(null, 'x', '470');
-      text.setAttributeNS(null, 'y', 135 + i * 25);
-      text.setAttributeNS(null, 'font-size', '11');
+      const text = document.createElementNS(ns, 'text');
+      text.setAttribute('x', '570');
+      text.setAttribute('y', 175 + i * 28);
+      text.setAttribute('font-size', '11');
       text.textContent = info;
-      svg.appendChild(text);
+      svgElement.appendChild(text);
     });
+  }
+
+  /**
+   * Draw CMOS transistor
+   */
+  drawCMOSTransistor(svg, x, y, type, color) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const g = document.createElementNS(ns, 'g');
+
+    // Gate line (vertical)
+    const gateLine = document.createElementNS(ns, 'line');
+    gateLine.setAttribute('x1', x - 12);
+    gateLine.setAttribute('y1', y - 30);
+    gateLine.setAttribute('x2', x - 12);
+    gateLine.setAttribute('y2', y + 30);
+    gateLine.setAttribute('stroke', '#333');
+    gateLine.setAttribute('stroke-width', '2');
+    g.appendChild(gateLine);
+
+    // Channel (rectangle)
+    const channel = document.createElementNS(ns, 'rect');
+    channel.setAttribute('x', x - 8);
+    channel.setAttribute('y', y - 10);
+    channel.setAttribute('width', '20');
+    channel.setAttribute('height', '20');
+    channel.setAttribute('fill', color);
+    channel.setAttribute('stroke', '#333');
+    channel.setAttribute('stroke-width', '2');
+    channel.setAttribute('rx', '2');
+    g.appendChild(channel);
+
+    // Drain connection
+    const drain = document.createElementNS(ns, 'line');
+    drain.setAttribute('x1', x + 12);
+    drain.setAttribute('y1', y - 10);
+    drain.setAttribute('x2', x + 12);
+    drain.setAttribute('y2', y - 30);
+    drain.setAttribute('stroke', '#333');
+    drain.setAttribute('stroke-width', '2');
+    g.appendChild(drain);
+
+    // Source connection
+    const source = document.createElementNS(ns, 'line');
+    source.setAttribute('x1', x + 12);
+    source.setAttribute('y1', y + 10);
+    source.setAttribute('x2', x + 12);
+    source.setAttribute('y2', y + 30);
+    source.setAttribute('stroke', '#333');
+    source.setAttribute('stroke-width', '2');
+    g.appendChild(source);
+
+    // Type label
+    const label = document.createElementNS(ns, 'text');
+    label.setAttribute('x', x + 35);
+    label.setAttribute('y', y + 5);
+    label.setAttribute('font-size', '10');
+    label.setAttribute('font-weight', 'bold');
+    label.textContent = type === 'PMOS' ? 'P' : 'N';
+    g.appendChild(label);
+
+    svg.appendChild(g);
+  }
+
+  /**
+   * Render truth table
+   */
+  renderTruthTable(containerElement) {
+    containerElement.innerHTML = '';
+
+    if (!this.truthTable || this.truthTable.length === 0) {
+      containerElement.innerHTML = '<p>No truth table data</p>';
+      return;
+    }
+
+    const table = document.createElement('table');
+    table.className = 'truth-table';
+
+    // Create header
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+
+    this.variables.forEach(v => {
+      const th = document.createElement('th');
+      th.textContent = v.toUpperCase();
+      headerRow.appendChild(th);
+    });
+
+    const outputTh = document.createElement('th');
+    outputTh.textContent = 'Output';
+    headerRow.appendChild(outputTh);
+
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // Create body
+    const tbody = document.createElement('tbody');
+    this.truthTable.forEach((row, idx) => {
+      const tr = document.createElement('tr');
+
+      this.variables.forEach(v => {
+        const td = document.createElement('td');
+        td.textContent = row[v];
+        td.className = row[v] === 1 ? 'high' : 'low';
+        tr.appendChild(td);
+      });
+
+      const outputTd = document.createElement('td');
+      outputTd.textContent = row.output;
+      outputTd.className = row.output === 1 ? 'high' : 'low';
+      outputTd.style.fontWeight = 'bold';
+      tr.appendChild(outputTd);
+
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    containerElement.appendChild(table);
   }
 }
 
-// Export for use
+// Export for use in other files
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { GateVisualizer };
+  module.exports = Visualizer;
 }
