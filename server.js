@@ -4,6 +4,7 @@ const port = 3000;
 
 // Serve static files
 app.use(express.static('public'));
+app.use(express.static('assets'));
 app.use(express.json());
 
 // API endpoint to parse boolean expression and generate data
