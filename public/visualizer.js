@@ -84,9 +84,14 @@ class Visualizer {
     // Zoom with scroll
     svgElement.addEventListener('wheel', (e) => {
       e.preventDefault();
+      const rect = svgElement.getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
       const delta = e.deltaY > 0 ? 0.95 : 1.05;
       scale *= delta;
       scale = Math.min(Math.max(scale, 0.5), 3);
+      currentX = centerX - (centerX - currentX) / delta;
+      currentY = centerY - (centerY - currentY) / delta;
       updateTransform();
     });
 
@@ -283,249 +288,246 @@ class Visualizer {
     svg.appendChild(line3);
   }
   /**
-   * Render CMOS implementation diagram
+   * Extract SOP (Sum of Products) terms from AST
+   */
+  extractSOP(node) {
+    if (!node) return [];
+    if (node.type === 'VAR') return [[{ var: node.value, inverted: false }]];
+    if (node.type === 'NOT') {
+      const inner = this.extractSOP(node.operand);
+      return inner.map(term => term.map(lit => ({ ...lit, inverted: !lit.inverted })));
+    }
+    if (node.type === 'AND') {
+      const left = this.extractSOP(node.left);
+      const right = this.extractSOP(node.right);
+      return left.flatMap(l => right.map(r => [...l, ...r]));
+    }
+    if (node.type === 'OR') {
+      return [...this.extractSOP(node.left), ...this.extractSOP(node.right)];
+    }
+    return [];
+  }
+
+  /**
+   * Render CMOS implementation diagram with proper complementary logic
    */
   renderCMOSDiagram(svgElement) {
     svgElement.innerHTML = '';
-
     const ns = 'http://www.w3.org/2000/svg';
-    const numVars = this.variables.length;
-    const transistorSpacing = 70;
-    const transistorWidth = 24;
-    const transistorHeight = 48;
-    const minHeight = 300;
-    const contentHeight = Math.max(minHeight - 100, 180);
-    const totalHeight = contentHeight + 100;
-    const contentWidth = 150 + numVars * transistorSpacing + 80;
+    svgElement.setAttribute('viewBox', '0 0 1200 600');
 
-    svgElement.setAttribute('viewBox', `0 0 ${contentWidth} ${totalHeight}`);
-
-    // Background
     const bg = document.createElementNS(ns, 'rect');
-    bg.setAttribute('width', contentWidth);
-    bg.setAttribute('height', totalHeight);
+    bg.setAttribute('width', '1200');
+    bg.setAttribute('height', '600');
     bg.setAttribute('fill', 'white');
     svgElement.appendChild(bg);
 
-    // Create group for zoom/pan
     const g = document.createElementNS(ns, 'g');
 
-    const vddY = 40;
-    const gndY = totalHeight - 40;
-    const midY = totalHeight / 2;
-    const pmosCenterY = vddY + 60;
-    const nmosCenterY = gndY - 60;
+    // Extract SOP form
+    const sopTerms = this.extractSOP(this.ast);
 
-    // VDD line (black)
+    const vddY = 40;
+    const gndY = 560;
+    const outputY = 300;
+    const transistorHeight = 50;
+    const transistorWidth = 80;
+    const stageHeight = 90;
+    const parallelSpacing = 100;
+
+    // Draw VDD/GND rails
     const vddLine = document.createElementNS(ns, 'line');
     vddLine.setAttribute('x1', '40');
     vddLine.setAttribute('y1', vddY);
-    vddLine.setAttribute('x2', contentWidth - 40);
+    vddLine.setAttribute('x2', '1160');
     vddLine.setAttribute('y2', vddY);
     vddLine.setAttribute('stroke', '#000');
-    vddLine.setAttribute('stroke-width', '3.5');
+    vddLine.setAttribute('stroke-width', '4.5');
     g.appendChild(vddLine);
 
     const vddLabel = document.createElementNS(ns, 'text');
     vddLabel.setAttribute('x', '10');
     vddLabel.setAttribute('y', vddY + 5);
-    vddLabel.setAttribute('font-size', '12');
+    vddLabel.setAttribute('font-size', '14');
     vddLabel.setAttribute('font-weight', 'bold');
     vddLabel.textContent = 'VDD';
     g.appendChild(vddLabel);
 
-    // GND line (black)
     const gndLine = document.createElementNS(ns, 'line');
     gndLine.setAttribute('x1', '40');
     gndLine.setAttribute('y1', gndY);
-    gndLine.setAttribute('x2', contentWidth - 40);
+    gndLine.setAttribute('x2', '1160');
     gndLine.setAttribute('y2', gndY);
     gndLine.setAttribute('stroke', '#000');
-    gndLine.setAttribute('stroke-width', '3.5');
+    gndLine.setAttribute('stroke-width', '4.5');
     g.appendChild(gndLine);
 
     const gndLabel = document.createElementNS(ns, 'text');
     gndLabel.setAttribute('x', '5');
     gndLabel.setAttribute('y', gndY + 5);
-    gndLabel.setAttribute('font-size', '12');
+    gndLabel.setAttribute('font-size', '14');
     gndLabel.setAttribute('font-weight', 'bold');
     gndLabel.textContent = 'GND';
     g.appendChild(gndLabel);
 
-    const startX = 100;
-    const varInputX = 50;
-
-    // Draw variable inputs on left side
-    this.variables.forEach((v, i) => {
-      const varY = pmosCenterY - (numVars - 1) * 25 + i * 50;
-      
-      // Variable input box
-      const box = document.createElementNS(ns, 'rect');
-      box.setAttribute('x', varInputX);
-      box.setAttribute('y', varY - 15);
-      box.setAttribute('width', '30');
-      box.setAttribute('height', '30');
-      box.setAttribute('fill', 'white');
-      box.setAttribute('stroke', '#aaa');
-      box.setAttribute('stroke-width', '1.5');
-      g.appendChild(box);
-
-      const varLabel = document.createElementNS(ns, 'text');
-      varLabel.setAttribute('x', varInputX + 15);
-      varLabel.setAttribute('y', varY + 7);
-      varLabel.setAttribute('text-anchor', 'middle');
-      varLabel.setAttribute('font-size', '12');
-      varLabel.setAttribute('font-weight', 'bold');
-      varLabel.textContent = v.toUpperCase();
-      g.appendChild(varLabel);
-    });
-
-    // Draw PMOS transistors with gates
-    this.variables.forEach((v, i) => {
-      const transistorX = startX + i * transistorSpacing;
-      const varY = pmosCenterY - (numVars - 1) * 25 + i * 50;
-      
-      // Connect VDD to first PMOS drain
-      if (i === 0) {
-        const vddConnectLine = document.createElementNS(ns, 'line');
-        vddConnectLine.setAttribute('x1', transistorX);
-        vddConnectLine.setAttribute('y1', vddY);
-        vddConnectLine.setAttribute('x2', transistorX);
-        vddConnectLine.setAttribute('y2', pmosCenterY - transistorHeight / 2);
-        vddConnectLine.setAttribute('stroke', '#333');
-        vddConnectLine.setAttribute('stroke-width', '3.5');
-        g.appendChild(vddConnectLine);
-      }
-      
-      // Draw PMOS transistor
-      this.drawCMOSTransistor(g, transistorX, pmosCenterY, 'PMOS');
-      
-      // Draw gate input line from variable to transistor gate
-      const gateInputLine = document.createElementNS(ns, 'line');
-      gateInputLine.setAttribute('x1', varInputX + 30);
-      gateInputLine.setAttribute('y1', varY);
-      gateInputLine.setAttribute('x2', transistorX - transistorWidth / 2 - 5);
-      gateInputLine.setAttribute('y2', pmosCenterY);
-      gateInputLine.setAttribute('stroke', '#333');
-      gateInputLine.setAttribute('stroke-width', '2');
-      g.appendChild(gateInputLine);
-    });
-
-    // Draw NMOS transistors with gates
-    this.variables.forEach((v, i) => {
-      const transistorX = startX + i * transistorSpacing;
-      const varY = pmosCenterY - (numVars - 1) * 25 + i * 50;
-      
-      // Connect GND to first NMOS source
-      if (i === 0) {
-        const gndConnectLine = document.createElementNS(ns, 'line');
-        gndConnectLine.setAttribute('x1', transistorX);
-        gndConnectLine.setAttribute('y1', gndY);
-        gndConnectLine.setAttribute('x2', transistorX);
-        gndConnectLine.setAttribute('y2', nmosCenterY + transistorHeight / 2);
-        gndConnectLine.setAttribute('stroke', '#333');
-        gndConnectLine.setAttribute('stroke-width', '3.5');
-        g.appendChild(gndConnectLine);
-      }
-      
-      // Draw NMOS transistor
-      this.drawCMOSTransistor(g, transistorX, nmosCenterY, 'NMOS');
-      
-      // Draw gate input line from variable to transistor gate
-      const gateInputLine = document.createElementNS(ns, 'line');
-      gateInputLine.setAttribute('x1', varInputX + 30);
-      gateInputLine.setAttribute('y1', varY);
-      gateInputLine.setAttribute('x2', transistorX - transistorWidth / 2 - 5);
-      gateInputLine.setAttribute('y2', nmosCenterY);
-      gateInputLine.setAttribute('stroke', '#333');
-      gateInputLine.setAttribute('stroke-width', '2');
-      g.appendChild(gateInputLine);
-    });
-
-    // Connect transistors in series (drain-to-gate connections)
-    for (let i = 0; i < numVars - 1; i++) {
-      const currentX = startX + i * transistorSpacing;
-      const nextX = startX + (i + 1) * transistorSpacing;
-
-      // PMOS source to next PMOS gate connection through middle
-      const pConnectLine = document.createElementNS(ns, 'line');
-      pConnectLine.setAttribute('x1', currentX);
-      pConnectLine.setAttribute('y1', pmosCenterY + transistorHeight / 2);
-      pConnectLine.setAttribute('x2', currentX);
-      pConnectLine.setAttribute('y2', midY);
-      pConnectLine.setAttribute('stroke', '#333');
-      pConnectLine.setAttribute('stroke-width', '3.5');
-      g.appendChild(pConnectLine);
-
-      const pHorizontalLine = document.createElementNS(ns, 'line');
-      pHorizontalLine.setAttribute('x1', currentX);
-      pHorizontalLine.setAttribute('y1', midY);
-      pHorizontalLine.setAttribute('x2', nextX);
-      pHorizontalLine.setAttribute('y2', midY);
-      pHorizontalLine.setAttribute('stroke', '#333');
-      pHorizontalLine.setAttribute('stroke-width', '3.5');
-      g.appendChild(pHorizontalLine);
-
-      // NMOS drain to next NMOS source connection through middle
-      const nConnectLine = document.createElementNS(ns, 'line');
-      nConnectLine.setAttribute('x1', currentX);
-      nConnectLine.setAttribute('y1', nmosCenterY - transistorHeight / 2);
-      nConnectLine.setAttribute('x2', currentX);
-      nConnectLine.setAttribute('y2', midY);
-      nConnectLine.setAttribute('stroke', '#333');
-      nConnectLine.setAttribute('stroke-width', '3.5');
-      g.appendChild(nConnectLine);
-
-      const nHorizontalLine = document.createElementNS(ns, 'line');
-      nHorizontalLine.setAttribute('x1', currentX);
-      nHorizontalLine.setAttribute('y1', midY);
-      nHorizontalLine.setAttribute('x2', nextX);
-      nHorizontalLine.setAttribute('y2', midY);
-      nHorizontalLine.setAttribute('stroke', '#333');
-      nHorizontalLine.setAttribute('stroke-width', '3.5');
-      g.appendChild(nHorizontalLine);
-    }
-
-    // Last PMOS output
-    const lastPmosX = startX + (numVars - 1) * transistorSpacing;
-    const lastPmosOutput = document.createElementNS(ns, 'line');
-    lastPmosOutput.setAttribute('x1', lastPmosX);
-    lastPmosOutput.setAttribute('y1', pmosCenterY + transistorHeight / 2);
-    lastPmosOutput.setAttribute('x2', lastPmosX);
-    lastPmosOutput.setAttribute('y2', midY);
-    lastPmosOutput.setAttribute('stroke', '#333');
-    lastPmosOutput.setAttribute('stroke-width', '3.5');
-    g.appendChild(lastPmosOutput);
-
-    // Last NMOS output
-    const lastNmosX = startX + (numVars - 1) * transistorSpacing;
-    const lastNmosOutput = document.createElementNS(ns, 'line');
-    lastNmosOutput.setAttribute('x1', lastNmosX);
-    lastNmosOutput.setAttribute('y1', nmosCenterY - transistorHeight / 2);
-    lastNmosOutput.setAttribute('x2', lastNmosX);
-    lastNmosOutput.setAttribute('y2', midY);
-    lastNmosOutput.setAttribute('stroke', '#333');
-    lastNmosOutput.setAttribute('stroke-width', '3.5');
-    g.appendChild(lastNmosOutput);
-
-    // Output line extending right
-    const outX = startX + (numVars - 1) * transistorSpacing;
-    const outputLine = document.createElementNS(ns, 'line');
-    outputLine.setAttribute('x1', outX);
-    outputLine.setAttribute('y1', midY);
-    outputLine.setAttribute('x2', contentWidth - 80);
-    outputLine.setAttribute('y2', midY);
-    outputLine.setAttribute('stroke', '#333');
-    outputLine.setAttribute('stroke-width', '3.5');
-    g.appendChild(outputLine);
+    // Output node
+    const outCircle = document.createElementNS(ns, 'circle');
+    outCircle.setAttribute('cx', '1050');
+    outCircle.setAttribute('cy', outputY);
+    outCircle.setAttribute('r', '5');
+    outCircle.setAttribute('fill', '#000');
+    g.appendChild(outCircle);
 
     const outLabel = document.createElementNS(ns, 'text');
-    outLabel.setAttribute('x', contentWidth - 60);
-    outLabel.setAttribute('y', midY + 5);
-    outLabel.setAttribute('font-size', '12');
+    outLabel.setAttribute('x', '1070');
+    outLabel.setAttribute('y', outputY + 5);
+    outLabel.setAttribute('font-size', '14');
     outLabel.setAttribute('font-weight', 'bold');
     outLabel.textContent = 'Out';
     g.appendChild(outLabel);
+
+    // ===== PMOS: Series stages of parallel transistors =====
+    let currentPmosY = vddY + 60;
+    let previousStageBottomX = 600; // Center column for series connections
+
+    sopTerms.forEach((term, stageIdx) => {
+      const termLength = term.length;
+      const stageY = currentPmosY;
+      
+      // Parallel transistors in this stage
+      const startX = 600 - (termLength - 1) * parallelSpacing / 2;
+
+      term.forEach((literal, idx) => {
+        const transistorX = startX + idx * parallelSpacing;
+        
+        // Draw PMOS transistor (inverted literal)
+        this.drawCMOSTransistor(g, transistorX, stageY, 'PMOS',
+          !literal.inverted ? `${literal.var}'` : literal.var);
+
+        // Connect to VDD (from above)
+        if (stageIdx === 0) {
+          const vddConn = document.createElementNS(ns, 'line');
+          vddConn.setAttribute('x1', transistorX);
+          vddConn.setAttribute('y1', vddY);
+          vddConn.setAttribute('x2', transistorX);
+          vddConn.setAttribute('y2', stageY - transistorHeight / 2);
+          vddConn.setAttribute('stroke', '#000');
+          vddConn.setAttribute('stroke-width', '2.5');
+          g.appendChild(vddConn);
+        } else {
+          // Connect from previous stage
+          const prevConn = document.createElementNS(ns, 'line');
+          prevConn.setAttribute('x1', transistorX);
+          prevConn.setAttribute('y1', stageY - stageHeight + transistorHeight / 2);
+          prevConn.setAttribute('x2', transistorX);
+          prevConn.setAttribute('y2', stageY - transistorHeight / 2);
+          prevConn.setAttribute('stroke', '#000');
+          prevConn.setAttribute('stroke-width', '2.5');
+          g.appendChild(prevConn);
+        }
+
+        // Horizontal connection to center node (series connection)
+        const horizLine = document.createElementNS(ns, 'line');
+        horizLine.setAttribute('x1', transistorX);
+        horizLine.setAttribute('y1', stageY + transistorHeight / 2);
+        horizLine.setAttribute('x2', 600);
+        horizLine.setAttribute('y2', stageY + transistorHeight / 2);
+        horizLine.setAttribute('stroke', '#000');
+        horizLine.setAttribute('stroke-width', '2.5');
+        g.appendChild(horizLine);
+      });
+
+      // Vertical series connection to next stage or output
+      if (stageIdx < sopTerms.length - 1) {
+        const vertLine = document.createElementNS(ns, 'line');
+        vertLine.setAttribute('x1', '600');
+        vertLine.setAttribute('y1', stageY + transistorHeight / 2);
+        vertLine.setAttribute('x2', '600');
+        vertLine.setAttribute('y2', stageY + stageHeight - transistorHeight / 2);
+        vertLine.setAttribute('stroke', '#000');
+        vertLine.setAttribute('stroke-width', '2.5');
+        g.appendChild(vertLine);
+      } else {
+        // Last stage connects to output
+        const lastConn = document.createElementNS(ns, 'line');
+        lastConn.setAttribute('x1', '600');
+        lastConn.setAttribute('y1', stageY + transistorHeight / 2);
+        lastConn.setAttribute('x2', '600');
+        lastConn.setAttribute('y2', outputY);
+        lastConn.setAttribute('stroke', '#000');
+        lastConn.setAttribute('stroke-width', '2.5');
+        g.appendChild(lastConn);
+
+        const horizToOut = document.createElementNS(ns, 'line');
+        horizToOut.setAttribute('x1', '600');
+        horizToOut.setAttribute('y1', outputY);
+        horizToOut.setAttribute('x2', '1050');
+        horizToOut.setAttribute('y2', outputY);
+        horizToOut.setAttribute('stroke', '#000');
+        horizToOut.setAttribute('stroke-width', '2.5');
+        g.appendChild(horizToOut);
+      }
+
+      currentPmosY += stageHeight;
+    });
+
+    // ===== NMOS: Parallel chains of series transistors =====
+    sopTerms.forEach((term, chainIdx) => {
+      const chainX = 150 + chainIdx * 180;
+      const termLength = term.length;
+      const chainStartY = outputY + 50;
+
+      // Series chain for this term
+      term.forEach((literal, idx) => {
+        const transistorY = chainStartY + idx * transistorHeight;
+
+        // Draw NMOS transistor (normal literal)
+        this.drawCMOSTransistor(g, chainX, transistorY, 'NMOS',
+          literal.inverted ? `${literal.var}'` : literal.var);
+
+        // Vertical series connections
+        if (idx < term.length - 1) {
+          const seriesLine = document.createElementNS(ns, 'line');
+          seriesLine.setAttribute('x1', chainX);
+          seriesLine.setAttribute('y1', transistorY + transistorHeight / 2);
+          seriesLine.setAttribute('x2', chainX);
+          seriesLine.setAttribute('y2', transistorY + transistorHeight);
+          seriesLine.setAttribute('stroke', '#000');
+          seriesLine.setAttribute('stroke-width', '2.5');
+          g.appendChild(seriesLine);
+        }
+      });
+
+      // Connect top of chain to output
+      const topConn = document.createElementNS(ns, 'line');
+      topConn.setAttribute('x1', chainX);
+      topConn.setAttribute('y1', chainStartY - transistorHeight / 2);
+      topConn.setAttribute('x2', chainX);
+      topConn.setAttribute('y2', outputY);
+      topConn.setAttribute('stroke', '#000');
+      topConn.setAttribute('stroke-width', '2.5');
+      g.appendChild(topConn);
+
+      const horizToOut = document.createElementNS(ns, 'line');
+      horizToOut.setAttribute('x1', chainX);
+      horizToOut.setAttribute('y1', outputY);
+      horizToOut.setAttribute('x2', '1050');
+      horizToOut.setAttribute('y2', outputY);
+      horizToOut.setAttribute('stroke', '#000');
+      horizToOut.setAttribute('stroke-width', '2.5');
+      g.appendChild(horizToOut);
+
+      // Connect bottom of chain to GND
+      const lastChainY = chainStartY + (termLength - 1) * transistorHeight;
+      const gndConn = document.createElementNS(ns, 'line');
+      gndConn.setAttribute('x1', chainX);
+      gndConn.setAttribute('y1', lastChainY + transistorHeight / 2);
+      gndConn.setAttribute('x2', chainX);
+      gndConn.setAttribute('y2', gndY);
+      gndConn.setAttribute('stroke', '#000');
+      gndConn.setAttribute('stroke-width', '2.5');
+      g.appendChild(gndConn);
+    });
 
     svgElement.appendChild(g);
     this.setupZoomPan(svgElement, g);
@@ -534,17 +536,29 @@ class Visualizer {
   /**
    * Draw CMOS transistor using PNG images
    */
-  drawCMOSTransistor(group, x, y, type) {
+  drawCMOSTransistor(group, x, y, type, label = '') {
     const ns = 'http://www.w3.org/2000/svg';
     const imageName = type === 'PMOS' ? 'pmos.png' : 'nmos.png';
     
     const image = document.createElementNS(ns, 'image');
     image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `/assets/${imageName}`);
-    image.setAttribute('x', x - 12);  // 24px wide, centered at x
-    image.setAttribute('y', y - 24);  // 48px tall, centered at y
-    image.setAttribute('width', '24');
-    image.setAttribute('height', '48');
+    image.setAttribute('x', x - 87);  // 160px wide, centered at x
+    image.setAttribute('y', y - 52.5);  // 105px tall, centered at y
+    image.setAttribute('width', '160');
+    image.setAttribute('height', '105');
     group.appendChild(image);
+
+    // Draw label if provided
+    if (label) {
+      const labelText = document.createElementNS(ns, 'text');
+      labelText.setAttribute('x', x - 100);
+      labelText.setAttribute('y', y + 5);
+      labelText.setAttribute('font-size', '12');
+      labelText.setAttribute('font-weight', 'bold');
+      labelText.setAttribute('fill', '#000');
+      labelText.textContent = label;
+      group.appendChild(labelText);
+    }
   }
 
   /**
