@@ -289,6 +289,16 @@ class Visualizer {
   }
   /**
    * Extract SOP (Sum of Products) terms from AST
+   * Returns array of AND terms (as array of literals) representing OR-of-ANDs
+   * Each literal has: var (variable name), inverted (boolean)
+   *   inverted=true means the literal is 'var (complement)
+   *   inverted=false means the literal is var (plain signal)
+   * 
+   * CMOS Gate Signals:
+   *   Both NMOS and PMOS receive same gate signal labels from extracted literals
+   *   NMOS: conducts (pulls down) when gate = 1
+   *   PMOS: conducts (pulls up) when gate = 0
+   *   Topology: PMOS in series stages (implements SOP), NMOS in parallel chains (implements dual)
    */
   extractSOP(node) {
     if (!node) return [];
@@ -310,6 +320,17 @@ class Visualizer {
 
   /**
    * Render CMOS implementation diagram with proper complementary logic
+   * 
+   * Truth Table Output Match:
+   *   The output node is driven by the PMOS/NMOS complementary logic.
+   *   PMOS (pull-up) is series of parallel chains: implements OR of ANDs (SOP)
+   *   NMOS (pull-down) is parallel of series chains: implements dual topology (AND of ORs)
+   *   Output equals direct evaluation of the AST (no inversion)
+   * 
+   * Gate Signal Derivation:
+   *   Extracted SOP literals directly label transistor gates
+   *   literal.inverted=true → gate label shows 'var (complement)
+   *   literal.inverted=false → gate label shows var (plain signal)
    */
   renderCMOSDiagram(svgElement) {
     svgElement.innerHTML = '';
@@ -324,7 +345,7 @@ class Visualizer {
 
     const g = document.createElementNS(ns, 'g');
 
-    // Extract SOP form
+    // Extract SOP form: each term is AND of literals, SOP is OR of terms
     const sopTerms = this.extractSOP(this.ast);
 
     const vddY = 40;
@@ -400,9 +421,11 @@ class Visualizer {
       term.forEach((literal, idx) => {
         const transistorX = startX + idx * parallelSpacing;
         
-        // Draw PMOS transistor (inverted literal)
+        // Draw PMOS transistor with correct gate signal
+        // Gate signal: if literal is inverted (var'), show var'; otherwise show var
+        // PMOS pulls up (conducts) when gate = 0, so labels reflect the signal on gate
         this.drawCMOSTransistor(g, transistorX, stageY, 'PMOS',
-          !literal.inverted ? `${literal.var}'` : literal.var);
+          literal.inverted ? `${literal.var}'` : literal.var);
 
         // Connect to VDD (from above)
         if (stageIdx === 0) {
@@ -481,7 +504,9 @@ class Visualizer {
       term.forEach((literal, idx) => {
         const transistorY = chainStartY + idx * transistorHeight;
 
-        // Draw NMOS transistor (normal literal)
+        // Draw NMOS transistor with correct gate signal
+        // Gate signal: if literal is inverted (var'), show var'; otherwise show var
+        // NMOS pulls down (conducts) when gate = 1, so labels reflect the signal on gate
         this.drawCMOSTransistor(g, chainX, transistorY, 'NMOS',
           literal.inverted ? `${literal.var}'` : literal.var);
 
