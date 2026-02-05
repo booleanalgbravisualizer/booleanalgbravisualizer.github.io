@@ -335,7 +335,9 @@ class Visualizer {
 
     // Embed the image centered at position (x, y)
     const image = document.createElementNS(ns, 'image');
-    image.setAttribute('href', `/assets/${imageName}`);
+    const imageHref = new URL(`assets/${imageName}`, document.baseURI).toString();
+    image.setAttribute('href', imageHref);
+    image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', imageHref);
     image.setAttribute('x', x - imgWidth / 2);
     image.setAttribute('y', y - imgHeight / 2);
     image.setAttribute('width', imgWidth);
@@ -1062,7 +1064,9 @@ class Visualizer {
     const imgHeight = 100;
     
     const image = document.createElementNS(ns, 'image');
-    image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `/assets/${imageName}`);
+    const imageHref = new URL(`assets/${imageName}`, document.baseURI).toString();
+    image.setAttribute('href', imageHref);
+    image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', imageHref);
     image.setAttribute('x', x - imgWidth/2-29);
     image.setAttribute('y', y - imgHeight/2);
     image.setAttribute('width', imgWidth);
