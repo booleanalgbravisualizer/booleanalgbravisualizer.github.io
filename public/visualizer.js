@@ -43,7 +43,7 @@ class Visualizer {
     line.setAttribute('y1', '250');
     line.setAttribute('x2', outputX);
     line.setAttribute('y2', '250');
-    line.setAttribute('stroke', '#333');
+    line.setAttribute('stroke', '#000000');
     line.setAttribute('stroke-width', '3.5');
     g.appendChild(line);
 
@@ -133,7 +133,7 @@ class Visualizer {
     const ns = 'http://www.w3.org/2000/svg';
     const spacing = 200;
     const verticalSpacing = 120;
-    const distanceFromMid=21;
+
 
     if (ast.type === 'VAR') {
       // Draw variable node box
@@ -187,10 +187,10 @@ class Visualizer {
       const rightX = this.renderGateTree(svg, ast.right, x, rightY, depth + 1);
       
       const gateX = Math.max(leftX, rightX) + spacing;
-      this.drawAndGate(svg, gateX, y+1.4);
+      this.drawAndGate(svg, gateX, y);
       
-      this.connectLineOrthogonal(svg, leftX, leftY, gateX - 50, y - distanceFromMid-2);
-      this.connectLineOrthogonal(svg, rightX, rightY, gateX - 50, y + distanceFromMid+2);
+      this.connectLineOrthogonal(svg, leftX, leftY, gateX - 50, y - 23);
+      this.connectLineOrthogonal(svg, rightX, rightY, gateX - 50, y + 23);
       
       return gateX + 60;
     }
@@ -204,8 +204,8 @@ class Visualizer {
       const gateX = Math.max(leftX, rightX) + spacing;
       this.drawOrGate(svg, gateX, y);
       
-      this.connectLineOrthogonal(svg, leftX, leftY, gateX - 50, y - distanceFromMid);
-      this.connectLineOrthogonal(svg, rightX, rightY, gateX - 50, y + distanceFromMid);
+      this.connectLineOrthogonal(svg, leftX, leftY, gateX - 50, y - 21);
+      this.connectLineOrthogonal(svg, rightX, rightY, gateX - 50, y + 21);
       
       return gateX + 60;
     }
@@ -217,10 +217,10 @@ class Visualizer {
       const rightX = this.renderGateTree(svg, ast.right, x, rightY, depth + 1);
       
       const gateX = Math.max(leftX, rightX) + spacing;
-      this.drawNandGate(svg, gateX, y+1.4);
+      this.drawNandGate(svg, gateX, y);
       
-      this.connectLineOrthogonal(svg, leftX, leftY, gateX - 50, y - distanceFromMid-2);
-      this.connectLineOrthogonal(svg, rightX, rightY, gateX - 50, y + distanceFromMid+2);
+      this.connectLineOrthogonal(svg, leftX, leftY, gateX - 50, y - 21.5);
+      this.connectLineOrthogonal(svg, rightX, rightY, gateX - 50, y + 21.5);
       
       return gateX + 60;
     }
@@ -234,8 +234,8 @@ class Visualizer {
       const gateX = Math.max(leftX, rightX) + spacing;
       this.drawNorGate(svg, gateX, y);
       
-      this.connectLineOrthogonal(svg, leftX, leftY, gateX - 50, y - distanceFromMid);
-      this.connectLineOrthogonal(svg, rightX, rightY, gateX - 50, y + distanceFromMid);
+      this.connectLineOrthogonal(svg, leftX, leftY, gateX - 50, y - 19);
+      this.connectLineOrthogonal(svg, rightX, rightY, gateX - 50, y + 19);
       
       return gateX + 60;
     }
@@ -249,8 +249,8 @@ class Visualizer {
       const gateX = Math.max(leftX, rightX) + spacing;
       this.drawXorGate(svg, gateX, y);
       
-      this.connectLineOrthogonal(svg, leftX, leftY, gateX - 50, y - distanceFromMid);
-      this.connectLineOrthogonal(svg, rightX, rightY, gateX - 50, y + distanceFromMid);
+      this.connectLineOrthogonal(svg, leftX, leftY, gateX - 50, y - 18.5);
+      this.connectLineOrthogonal(svg, rightX, rightY, gateX - 50, y + 18.5);
       
       return gateX + 60;
     }
@@ -264,8 +264,8 @@ class Visualizer {
       const gateX = Math.max(leftX, rightX) + spacing;
       this.drawXnorGate(svg, gateX, y);
       
-      this.connectLineOrthogonal(svg, leftX, leftY, gateX - 50, y - distanceFromMid);
-      this.connectLineOrthogonal(svg, rightX, rightY, gateX - 50, y + distanceFromMid);
+      this.connectLineOrthogonal(svg, leftX, leftY, gateX - 50, y - 17);
+      this.connectLineOrthogonal(svg, rightX, rightY, gateX - 50, y + 17);
       
       return gateX + 60;
     }
@@ -277,7 +277,7 @@ class Visualizer {
    * Draw AND gate using image
    */
   drawAndGate(svg, x, y) {
-    this.drawGateImage(svg, x, y, 'and.png', 'AND');
+    this.drawGateImage(svg, x, y+1.4, 'and.png', 'AND');
   }
 
   /**
@@ -298,28 +298,28 @@ class Visualizer {
    * Draw NAND gate using image
    */
   drawNandGate(svg, x, y) {
-    this.drawGateImage(svg, x, y, 'nand.png', 'NAND');
+    this.drawGateImage(svg, x, y+0.5, 'nand.png', 'NAND');
   }
 
   /**
    * Draw NOR gate using image
    */
   drawNorGate(svg, x, y) {
-    this.drawGateImage(svg, x, y, 'nor.png', 'NOR');
+    this.drawGateImage(svg, x, y+0.4, 'nor.png', 'NOR');
   }
 
   /**
    * Draw XOR gate using image
    */
   drawXorGate(svg, x, y) {
-    this.drawGateImage(svg, x, y, 'xor.png', 'XOR');
+    this.drawGateImage(svg, x, y+0.1, 'xor.png', 'XOR');
   }
 
   /**
    * Draw XNOR gate using image
    */
   drawXnorGate(svg, x, y) {
-    this.drawGateImage(svg, x, y, 'xnor.png', 'XNOR');
+    this.drawGateImage(svg, x, y+0.1, 'xnor.png', 'XNOR');
   }
 
   /**
@@ -361,7 +361,7 @@ class Visualizer {
     line1.setAttribute('y1', y1);
     line1.setAttribute('x2', midX);
     line1.setAttribute('y2', y1);
-    line1.setAttribute('stroke', '#333');
+    line1.setAttribute('stroke', '#000000');
     line1.setAttribute('stroke-width', '3.5');
     svg.appendChild(line1);
     
@@ -371,7 +371,7 @@ class Visualizer {
     line2.setAttribute('y1', y1);
     line2.setAttribute('x2', midX);
     line2.setAttribute('y2', y2);
-    line2.setAttribute('stroke', '#333');
+    line2.setAttribute('stroke', '#000000');
     line2.setAttribute('stroke-width', '3.5');
     svg.appendChild(line2);
     
@@ -381,7 +381,7 @@ class Visualizer {
     line3.setAttribute('y1', y2);
     line3.setAttribute('x2', x2);
     line3.setAttribute('y2', y2);
-    line3.setAttribute('stroke', '#333');
+    line3.setAttribute('stroke', '#000000');
     line3.setAttribute('stroke-width', '3.5');
     svg.appendChild(line3);
   }
