@@ -45,10 +45,14 @@ class BooleanExpression {
   }
 
   /**
-   * Extract all unique variables from expression
+   * Extract all unique variables from expression.
+   * Strips keyword operators before matching single-letter variables
+   * so "a nor b" yields ['a','b'] not ['a','b','n','o','r'].
    */
   extractVariables() {
-    const matches = this.normalizedExpression.match(/[a-z]/g) || [];
+    const stripped = this.normalizedExpression
+      .replace(/\b(xnor|nand|xor|nor|not|and|or)\b/g, ' ');
+    const matches = stripped.match(/[a-z]/g) || [];
     return [...new Set(matches)].sort();
   }
 

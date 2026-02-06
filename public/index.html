@@ -6,13 +6,13 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Boolean Algebra Visualizer</h1>
+  <h1>Boolean Algebra Diagram Generator</h1>
   
   <div class="input-row">
     <input 
       type="text" 
       id="expressionInput" 
-      placeholder="Enter boolean expression (e.g., a*b+!c or a and b xor c)"
+      placeholder="Enter boolean expression"
     >
     <button id="formatHelpBtn" class="help-btn" title="Show expected formatting">?</button>
     <button id="copyLatexBtn">Copy LaTeX</button>
@@ -61,9 +61,9 @@
   <div id="errorMessage" class="error"></div>
 
   <div class="tabs">
-    <button id="tabBlockDiagram" class="tab-button active">block diagram</button>
-    <button id="tabCMOS" class="tab-button">cmos</button>
-    <button id="tabTruthTable" class="tab-button">truth table</button>
+    <button id="tabBlockDiagram" class="tab-button active">Block diagram</button>
+    <button id="tabCMOS" class="tab-button">CMOS</button>
+    <button id="tabTruthTable" class="tab-button">Truth Table</button>
   </div>
 
   <div id="blockDiagramTab" class="tab-content">
@@ -75,7 +75,10 @@
   </div>
 
   <div id="truthTableTab" class="tab-content" style="display:none;">
-    <button id="copyCSVBtn">Copy as CSV</button>
+    <div class="table-buttons">
+      <button id="copyHTMLBtn">Copy Table</button>
+      <button id="copyCSVBtn">Copy as CSV</button>
+    </div>
     <div id="truthTableContainer"></div>
   </div>
 

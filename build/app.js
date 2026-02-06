@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const expressionInput = document.getElementById('expressionInput');
   const copyLatexBtn = document.getElementById('copyLatexBtn');
   const copyCSVBtn = document.getElementById('copyCSVBtn');
+  const copyHTMLBtn = document.getElementById('copyHTMLBtn');
   const errorMessage = document.getElementById('errorMessage');
   const truthTableContainer = document.getElementById('truthTableContainer');
   const gatesSvg = document.getElementById('gatesSvg');
@@ -75,11 +76,28 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   copyLatexBtn.addEventListener('click', () => {
-    if (currentLatex) {
-      navigator.clipboard.writeText(currentLatex);
+    if (!currentLatex) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(currentLatex).catch(() => {
+        fallbackCopy(currentLatex);
+      });
+    } else {
+      fallbackCopy(currentLatex);
     }
   });
 
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+
+  // Copy as CSV (comma-separated)
   copyCSVBtn.addEventListener('click', () => {
     if (!currentVisualizer) return;
     const vars = currentVisualizer.variables;
@@ -89,6 +107,28 @@ document.addEventListener('DOMContentLoaded', () => {
       csv += vars.map(v => row[v]).join(',') + ',' + row.output + '\n';
     });
     navigator.clipboard.writeText(csv);
+  });
+
+  // Copy rendered HTML table (preserves formatting when pasting into rich-text editors)
+  copyHTMLBtn.addEventListener('click', () => {
+    const tableEl = truthTableContainer.querySelector('table');
+    if (!tableEl) return;
+    const htmlStr = tableEl.outerHTML;
+    const plainRows = [];
+    tableEl.querySelectorAll('tr').forEach(tr => {
+      const cells = [];
+      tr.querySelectorAll('th, td').forEach(cell => cells.push(cell.textContent));
+      plainRows.push(cells.join('\t'));
+    });
+    const plainText = plainRows.join('\n');
+    const blob = new Blob([htmlStr], { type: 'text/html' });
+    const textBlob = new Blob([plainText], { type: 'text/plain' });
+    navigator.clipboard.write([
+      new ClipboardItem({
+        'text/html': blob,
+        'text/plain': textBlob
+      })
+    ]);
   });
 
   // Tab switching
