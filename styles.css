@@ -85,6 +85,12 @@ svg {
   display: block;
 }
 
+.table-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
 table {
   border-collapse: collapse;
   margin-top: 10px;
@@ -92,13 +98,24 @@ table {
 
 th, td {
   border: 1px solid #ccc;
-  padding: 8px;
+  padding: 8px 24px;
   text-align: center;
+  min-width: 70px;
 }
 
 th {
   background: #f5f5f5;
   font-weight: bold;
+}
+
+td.high {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+td.low {
+  background: #fafafa;
+  color: #666;
 }
 
 /* Help button */
