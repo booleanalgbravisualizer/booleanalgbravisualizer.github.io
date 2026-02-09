@@ -103,6 +103,33 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.removeChild(ta);
   }
 
+  // Build Google-Docs-friendly HTML from a table element.
+  function buildCopyableHTML(tableEl) {
+    const clone = tableEl.cloneNode(true);
+    clone.setAttribute('border', '1');
+    clone.style.borderCollapse = 'collapse';
+    clone.querySelectorAll('th, td').forEach(cell => {
+      cell.style.border = '1px solid #000';
+      cell.style.padding = '4px 8px';
+      cell.style.textAlign = 'center';
+    });
+    clone.querySelectorAll('th').forEach(th => {
+      th.style.backgroundColor = '#f5f5f5';
+      th.style.fontWeight = 'bold';
+    });
+    return '<html><body><!--StartFragment-->' + clone.outerHTML + '<!--EndFragment--></body></html>';
+  }
+
+  function getPlainText(tableEl) {
+    const rows = [];
+    tableEl.querySelectorAll('tr').forEach(tr => {
+      const cells = [];
+      tr.querySelectorAll('th, td').forEach(cell => cells.push(cell.textContent));
+      rows.push(cells.join('\t'));
+    });
+    return rows.join('\n');
+  }
+
   // Copy as CSV (comma-separated)
   copyCSVBtn.addEventListener('click', () => {
     if (!currentVisualizer) return;
@@ -115,18 +142,12 @@ document.addEventListener('DOMContentLoaded', () => {
     navigator.clipboard.writeText(csv);
   });
 
-  // Copy rendered HTML table (preserves formatting when pasting into rich-text editors)
+  // Copy rendered HTML table (preserves formatting in Google Docs, Word, etc.)
   copyHTMLBtn.addEventListener('click', () => {
     const tableEl = truthTableContainer.querySelector('table');
     if (!tableEl) return;
-    const htmlStr = tableEl.outerHTML;
-    const plainRows = [];
-    tableEl.querySelectorAll('tr').forEach(tr => {
-      const cells = [];
-      tr.querySelectorAll('th, td').forEach(cell => cells.push(cell.textContent));
-      plainRows.push(cells.join('\t'));
-    });
-    const plainText = plainRows.join('\n');
+    const htmlStr = buildCopyableHTML(tableEl);
+    const plainText = getPlainText(tableEl);
     const blob = new Blob([htmlStr], { type: 'text/html' });
     const textBlob = new Blob([plainText], { type: 'text/plain' });
     navigator.clipboard.write([
@@ -155,14 +176,8 @@ document.addEventListener('DOMContentLoaded', () => {
   copyKMapHTMLBtn.addEventListener('click', () => {
     const tableEl = kmapContainer.querySelector('table');
     if (!tableEl) return;
-    const htmlStr = tableEl.outerHTML;
-    const plainRows = [];
-    tableEl.querySelectorAll('tr').forEach(tr => {
-      const cells = [];
-      tr.querySelectorAll('th, td').forEach(cell => cells.push(cell.textContent));
-      plainRows.push(cells.join('\t'));
-    });
-    const plainText = plainRows.join('\n');
+    const htmlStr = buildCopyableHTML(tableEl);
+    const plainText = getPlainText(tableEl);
     const blob = new Blob([htmlStr], { type: 'text/html' });
     const textBlob = new Blob([plainText], { type: 'text/plain' });
     navigator.clipboard.write([
