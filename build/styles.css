@@ -152,6 +152,27 @@ td.low {
   color: #666;
 }
 
+/* K-map sub-map grid (5+ variables) */
+.kmap-grid {
+  display: grid;
+  gap: 20px;
+  margin-top: 10px;
+  justify-content: start;
+}
+
+.kmap-submap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.kmap-submap-label {
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: #555;
+}
+
 /* Help button */
 .help-btn {
   width: 36px;

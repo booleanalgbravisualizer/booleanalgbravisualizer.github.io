@@ -104,7 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Build Google-Docs-friendly HTML from a table element.
-  function buildCopyableHTML(tableEl) {
+  // If rawOnly is true, returns just the styled table HTML (no <html> wrapper).
+  function buildCopyableHTML(tableEl, rawOnly) {
     const clone = tableEl.cloneNode(true);
     clone.setAttribute('border', '1');
     clone.style.borderCollapse = 'collapse';
@@ -117,6 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
       th.style.backgroundColor = '#f5f5f5';
       th.style.fontWeight = 'bold';
     });
+    if (rawOnly) return clone.outerHTML;
     return '<html><body><!--StartFragment-->' + clone.outerHTML + '<!--EndFragment--></body></html>';
   }
 
@@ -160,26 +162,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Copy K-map as CSV
   copyKMapCSVBtn.addEventListener('click', () => {
-    const tableEl = kmapContainer.querySelector('table');
-    if (!tableEl) return;
-    const rows = [];
-    tableEl.querySelectorAll('tr').forEach(tr => {
-      const cells = [];
-      tr.querySelectorAll('th, td').forEach(cell => cells.push(cell.textContent));
-      rows.push(cells.join(','));
+    const tables = kmapContainer.querySelectorAll('table');
+    if (!tables.length) return;
+    const parts = [];
+    tables.forEach((tableEl, idx) => {
+      // Include sub-map label if present
+      const label = tableEl.closest('.kmap-submap');
+      if (label) {
+        const labelEl = label.querySelector('.kmap-submap-label');
+        if (labelEl) parts.push(labelEl.textContent);
+      }
+      const rows = [];
+      tableEl.querySelectorAll('tr').forEach(tr => {
+        const cells = [];
+        tr.querySelectorAll('th, td').forEach(cell => cells.push(cell.textContent));
+        rows.push(cells.join(','));
+      });
+      parts.push(rows.join('\n'));
     });
-    const csv = rows.join('\n');
-    navigator.clipboard.writeText(csv);
+    navigator.clipboard.writeText(parts.join('\n\n'));
   });
 
   // Copy K-map as HTML table
   copyKMapHTMLBtn.addEventListener('click', () => {
-    const tableEl = kmapContainer.querySelector('table');
-    if (!tableEl) return;
-    const htmlStr = buildCopyableHTML(tableEl);
-    const plainText = getPlainText(tableEl);
-    const blob = new Blob([htmlStr], { type: 'text/html' });
-    const textBlob = new Blob([plainText], { type: 'text/plain' });
+    const tables = kmapContainer.querySelectorAll('table');
+    if (!tables.length) return;
+    const htmlParts = [];
+    const textParts = [];
+    tables.forEach(tableEl => {
+      const label = tableEl.closest('.kmap-submap');
+      if (label) {
+        const labelEl = label.querySelector('.kmap-submap-label');
+        if (labelEl) {
+          htmlParts.push('<p><b>' + labelEl.textContent + '</b></p>');
+          textParts.push(labelEl.textContent);
+        }
+      }
+      htmlParts.push(buildCopyableHTML(tableEl, true));
+      textParts.push(getPlainText(tableEl));
+    });
+    const fullHtml = '<html><body><!--StartFragment-->' + htmlParts.join('') + '<!--EndFragment--></body></html>';
+    const fullText = textParts.join('\n\n');
+    const blob = new Blob([fullHtml], { type: 'text/html' });
+    const textBlob = new Blob([fullText], { type: 'text/plain' });
     navigator.clipboard.write([
       new ClipboardItem({
         'text/html': blob,
