@@ -20,6 +20,9 @@ class BooleanExpression {
     return expr
       // NOT variants
       .replace(/'/g, '!')           // ' to !
+      .replace(/\u2018/g, '!')      // ' to ! (left single quote)
+      .replace(/\u2019/g, '!')      // ' to ! (right single quote/apostrophe)
+      .replace(/`/g, '!')           // ` to ! (backtick)
       .replace(/¯/g, '!')           // Overline to !
       .replace(/~/g, '!')           // ~ to !
       // NOR variants

@@ -64,6 +64,7 @@
     <button id="tabBlockDiagram" class="tab-button active">Block diagram</button>
     <button id="tabCMOS" class="tab-button">CMOS</button>
     <button id="tabTruthTable" class="tab-button">Truth Table</button>
+    <button id="tabKMap" class="tab-button">K-Map</button>
   </div>
 
   <div id="blockDiagramTab" class="tab-content">
@@ -80,6 +81,14 @@
       <button id="copyCSVBtn">Copy as CSV</button>
     </div>
     <div id="truthTableContainer"></div>
+  </div>
+
+  <div id="kmapTab" class="tab-content" style="display:none;">
+    <div class="table-buttons">
+      <button id="copyKMapHTMLBtn">Copy Table</button>
+      <button id="copyKMapCSVBtn">Copy as CSV</button>
+    </div>
+    <div id="kmapContainer"></div>
   </div>
 
   <script src="parser.js"></script>

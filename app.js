@@ -7,18 +7,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const copyLatexBtn = document.getElementById('copyLatexBtn');
   const copyCSVBtn = document.getElementById('copyCSVBtn');
   const copyHTMLBtn = document.getElementById('copyHTMLBtn');
+  const copyKMapCSVBtn = document.getElementById('copyKMapCSVBtn');
+  const copyKMapHTMLBtn = document.getElementById('copyKMapHTMLBtn');
   const errorMessage = document.getElementById('errorMessage');
   const truthTableContainer = document.getElementById('truthTableContainer');
+  const kmapContainer = document.getElementById('kmapContainer');
   const gatesSvg = document.getElementById('gatesSvg');
   const cmosSvg = document.getElementById('cmosSvg');
 
   const tabBlockDiagram = document.getElementById('tabBlockDiagram');
   const tabCMOS = document.getElementById('tabCMOS');
   const tabTruthTable = document.getElementById('tabTruthTable');
+  const tabKMap = document.getElementById('tabKMap');
 
   const blockDiagramTab = document.getElementById('blockDiagramTab');
   const cmosTab = document.getElementById('cmosTab');
   const truthTableTab = document.getElementById('truthTableTab');
+  const kmapTab = document.getElementById('kmapTab');
 
   // Format help modal elements
   const formatHelpBtn = document.getElementById('formatHelpBtn');
@@ -70,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
       currentVisualizer.renderCMOSDiagram(cmosSvg);
       
       currentVisualizer.renderTruthTable(truthTableContainer);
+      currentVisualizer.renderKMap(kmapContainer);
     } catch (error) {
       showError(error.message);
     }
@@ -131,9 +137,45 @@ document.addEventListener('DOMContentLoaded', () => {
     ]);
   });
 
+  // Copy K-map as CSV
+  copyKMapCSVBtn.addEventListener('click', () => {
+    const tableEl = kmapContainer.querySelector('table');
+    if (!tableEl) return;
+    const rows = [];
+    tableEl.querySelectorAll('tr').forEach(tr => {
+      const cells = [];
+      tr.querySelectorAll('th, td').forEach(cell => cells.push(cell.textContent));
+      rows.push(cells.join(','));
+    });
+    const csv = rows.join('\n');
+    navigator.clipboard.writeText(csv);
+  });
+
+  // Copy K-map as HTML table
+  copyKMapHTMLBtn.addEventListener('click', () => {
+    const tableEl = kmapContainer.querySelector('table');
+    if (!tableEl) return;
+    const htmlStr = tableEl.outerHTML;
+    const plainRows = [];
+    tableEl.querySelectorAll('tr').forEach(tr => {
+      const cells = [];
+      tr.querySelectorAll('th, td').forEach(cell => cells.push(cell.textContent));
+      plainRows.push(cells.join('\t'));
+    });
+    const plainText = plainRows.join('\n');
+    const blob = new Blob([htmlStr], { type: 'text/html' });
+    const textBlob = new Blob([plainText], { type: 'text/plain' });
+    navigator.clipboard.write([
+      new ClipboardItem({
+        'text/html': blob,
+        'text/plain': textBlob
+      })
+    ]);
+  });
+
   // Tab switching
-  const tabs = { block: tabBlockDiagram, cmos: tabCMOS, truth: tabTruthTable };
-  const contents = { block: blockDiagramTab, cmos: cmosTab, truth: truthTableTab };
+  const tabs = { block: tabBlockDiagram, cmos: tabCMOS, truth: tabTruthTable, kmap: tabKMap };
+  const contents = { block: blockDiagramTab, cmos: cmosTab, truth: truthTableTab, kmap: kmapTab };
 
   Object.keys(tabs).forEach(key => {
     tabs[key].addEventListener('click', () => {

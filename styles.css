@@ -118,6 +118,45 @@ td.low {
   color: #666;
 }
 
+/* K-map table */
+.kmap-table {
+  border-collapse: collapse;
+  margin: 12px auto;
+  font-size: 16px;
+}
+
+.kmap-table th,
+.kmap-table td {
+  border: 2px solid #999;
+  padding: 12px 24px;
+  text-align: center;
+  min-width: 50px;
+}
+
+.kmap-table th {
+  background: #e8eaf6;
+  font-weight: bold;
+}
+
+.kmap-table th.kmap-corner {
+  background: #d1d5eb;
+  font-style: italic;
+  font-size: 14px;
+}
+
+.kmap-table td.high {
+  background: #c8e6c9;
+  color: #1b5e20;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.kmap-table td.low {
+  background: #f5f5f5;
+  color: #888;
+  font-size: 18px;
+}
+
 /* Help button */
 .help-btn {
   width: 36px;

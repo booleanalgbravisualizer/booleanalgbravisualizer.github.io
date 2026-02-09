@@ -1274,6 +1274,118 @@ class Visualizer {
     table.appendChild(tbody);
     containerElement.appendChild(table);
   }
+
+  /**
+   * Render Karnaugh Map (K-map)
+   * Supports 2, 3, and 4 variable expressions
+   */
+  renderKMap(containerElement) {
+    containerElement.innerHTML = '';
+
+    const numVars = this.variables.length;
+
+    if (numVars < 2 || numVars > 4) {
+      containerElement.innerHTML = `<p>K-maps are only supported for 2–4 variables (you have ${numVars})</p>`;
+      return;
+    }
+
+    // Create a lookup: binary-key → output value
+    const valueMap = {};
+    this.truthTable.forEach(row => {
+      const key = this.variables.map(v => row[v]).join('');
+      valueMap[key] = row.output;
+    });
+
+    const table = document.createElement('table');
+    table.className = 'kmap-table';
+
+    if (numVars === 2) {
+      this.renderKMap2Var(table, valueMap);
+    } else if (numVars === 3) {
+      this.renderKMap3Var(table, valueMap);
+    } else if (numVars === 4) {
+      this.renderKMap4Var(table, valueMap);
+    }
+
+    containerElement.appendChild(table);
+  }
+
+  renderKMap2Var(table, valueMap) {
+    const [v0, v1] = this.variables.map(v => v.toUpperCase());
+
+    const headerRow = document.createElement('tr');
+    headerRow.innerHTML = `<th class="kmap-corner">${v0} \\ ${v1}</th><th>0</th><th>1</th>`;
+    table.appendChild(headerRow);
+
+    ['0', '1'].forEach(r => {
+      const row = document.createElement('tr');
+      const rowLabel = document.createElement('th');
+      rowLabel.textContent = r;
+      row.appendChild(rowLabel);
+
+      ['0', '1'].forEach(c => {
+        const td = document.createElement('td');
+        const key = r + c;
+        td.textContent = valueMap[key];
+        td.className = valueMap[key] === 1 ? 'high' : 'low';
+        row.appendChild(td);
+      });
+
+      table.appendChild(row);
+    });
+  }
+
+  renderKMap3Var(table, valueMap) {
+    const [v0, v1, v2] = this.variables.map(v => v.toUpperCase());
+    const colOrder = ['00', '01', '11', '10'];
+
+    const headerRow = document.createElement('tr');
+    headerRow.innerHTML = `<th class="kmap-corner">${v0} \\ ${v1}${v2}</th><th>00</th><th>01</th><th>11</th><th>10</th>`;
+    table.appendChild(headerRow);
+
+    ['0', '1'].forEach(r => {
+      const row = document.createElement('tr');
+      const rowLabel = document.createElement('th');
+      rowLabel.textContent = r;
+      row.appendChild(rowLabel);
+
+      colOrder.forEach(c => {
+        const td = document.createElement('td');
+        const key = r + c;
+        td.textContent = valueMap[key];
+        td.className = valueMap[key] === 1 ? 'high' : 'low';
+        row.appendChild(td);
+      });
+
+      table.appendChild(row);
+    });
+  }
+
+  renderKMap4Var(table, valueMap) {
+    const [v0, v1, v2, v3] = this.variables.map(v => v.toUpperCase());
+    const grayOrder = ['00', '01', '11', '10'];
+
+    const headerRow = document.createElement('tr');
+    headerRow.innerHTML = `<th class="kmap-corner">${v0}${v1} \\ ${v2}${v3}</th><th>00</th><th>01</th><th>11</th><th>10</th>`;
+    table.appendChild(headerRow);
+
+    grayOrder.forEach(r => {
+      const row = document.createElement('tr');
+      const rowLabel = document.createElement('th');
+      rowLabel.textContent = r;
+      row.appendChild(rowLabel);
+
+      grayOrder.forEach(c => {
+        const td = document.createElement('td');
+        const key = r + c;
+        td.textContent = valueMap[key];
+        td.className = valueMap[key] === 1 ? 'high' : 'low';
+        row.appendChild(td);
+      });
+
+      table.appendChild(row);
+    });
+  }
 }
 
 // Export for use in other files
