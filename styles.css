@@ -121,16 +121,15 @@ td.low {
 /* K-map table */
 .kmap-table {
   border-collapse: collapse;
-  margin: 12px auto;
-  font-size: 16px;
+  margin-top: 10px;
 }
 
 .kmap-table th,
 .kmap-table td {
-  border: 2px solid #999;
-  padding: 12px 24px;
+  border: 1px solid #ccc;
+  padding: 8px 24px;
   text-align: center;
-  min-width: 50px;
+  min-width: 70px;
 }
 
 .kmap-table th {
@@ -139,22 +138,18 @@ td.low {
 }
 
 .kmap-table th.kmap-corner {
-  background: #eee;
-  font-style: italic;
-  font-size: 14px;
+  background: #f5f5f5;
+  font-weight: bold;
 }
 
 .kmap-table td.high {
   background: #e8f5e9;
   color: #2e7d32;
-  font-weight: bold;
-  font-size: 18px;
 }
 
 .kmap-table td.low {
   background: #fafafa;
   color: #666;
-  font-size: 18px;
 }
 
 /* Help button */
