@@ -1,6 +1,5 @@
 /**
- * Boolean Algebra Visualizer
- * Generates SVG diagrams for logic gates, CMOS implementations, and truth tables
+ Generates SVG diagrams for logic gates, CMOS implementations, and truth tables
  */
 
 class Visualizer {

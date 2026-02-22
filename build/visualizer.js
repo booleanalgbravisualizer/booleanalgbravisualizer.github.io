@@ -11,9 +11,7 @@ class Visualizer {
     this.truthTable = booleanExpression.truthTable;
   }
 
-  /**
-   * Measure gate tree to determine leaf count and depth for spacing.
-   */
+  
   measureGateTree(ast) {
     if (!ast) return { leaves: 1, depth: 0 };
     if (ast.type === 'VAR') return { leaves: 1, depth: 0 };

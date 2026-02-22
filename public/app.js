@@ -4,7 +4,6 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   const expressionInput = document.getElementById('expressionInput');
-  const copyLatexBtn = document.getElementById('copyLatexBtn');
   const copyCSVBtn = document.getElementById('copyCSVBtn');
   const copyHTMLBtn = document.getElementById('copyHTMLBtn');
   const copyKMapCSVBtn = document.getElementById('copyKMapCSVBtn');
@@ -31,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalClose = document.querySelector('.modal-close');
 
   let currentVisualizer = null;
-  let currentLatex = '';
 
   // Format help modal handlers
   formatHelpBtn.addEventListener('click', () => {
@@ -66,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
       clearError();
       const boolExpr = new BooleanExpression(expression);
       currentVisualizer = new Visualizer(boolExpr);
-      currentLatex = boolExpr.toLatex();
 
       gatesSvg.setAttribute('viewBox', '0 0 1200 600');
       currentVisualizer.renderGateDiagram(gatesSvg);
@@ -79,28 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       showError(error.message);
     }
-  }
-
-  copyLatexBtn.addEventListener('click', () => {
-    if (!currentLatex) return;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(currentLatex).catch(() => {
-        fallbackCopy(currentLatex);
-      });
-    } else {
-      fallbackCopy(currentLatex);
-    }
-  });
-
-  function fallbackCopy(text) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
   }
 
   // Build Google-Docs-friendly HTML from a table element.

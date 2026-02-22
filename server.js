@@ -2,12 +2,11 @@ const express = require('express');
 const app = express();
 const port = 3000;
 
-// Serve static files
+//static files
 app.use(express.static('public'));
 app.use(express.static('assets'));
 app.use(express.json());
 
-// API endpoint to parse boolean expression and generate data
 app.post('/api/parse', (req, res) => {
   const { expression } = req.body;
   

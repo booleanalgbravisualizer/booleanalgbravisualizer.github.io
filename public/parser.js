@@ -329,6 +329,8 @@ class BooleanExpression {
       return `${this.toLatex(ast.left)} \\oplus ${this.toLatex(ast.right)}`;
     } else if (ast.type === 'XNOR') {
       return `\\overline{${this.toLatex(ast.left)} \\oplus ${this.toLatex(ast.right)}}`;
+    } else {
+      return '';
     }
   }
 
